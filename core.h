@@ -12,7 +12,7 @@ typedef long long dl_ptrdiff_t;
 #define dl_null ((void *) 0)
 
 typedef enum {
-	dl_error_ok,
+	dl_error_ok = 0,
 	dl_error_invalidValue,
 	dl_error_bufferOverflow,
 	dl_error_nullPointer,
