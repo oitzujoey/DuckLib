@@ -48,6 +48,7 @@ typedef struct {
 dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory, dl_size_t size, dl_memoryFit_t fit);
 void dl_memory_quit(dl_memoryAllocation_t *memoryAllocation);
 void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation);
+dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation);
 
 dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory);

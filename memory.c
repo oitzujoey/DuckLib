@@ -1,6 +1,7 @@
 
 #include "memory.h"
 #include <stdio.h>
+#include <string.h>
 
 
 dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory, dl_size_t size, dl_memoryFit_t fit) {
@@ -113,8 +114,10 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 #define B_COLOR_CYAN      "\x1B[46m"
 #define B_COLOR_WHITE     "\x1B[47m"
 
+	fflush(stdout); fflush(stderr);
+	
 	printf("(dl_memoryAllocation_t) {\n");
-	printf("\t.memory = %llu,\n", memoryAllocation.memory);
+	printf("\t.memory = %X,\n", memoryAllocation.memory);
 	printf("\t.size = %llu,\n", memoryAllocation.size);
 	printf("\t.fit = %s,\n",
 		((memoryAllocation.fit == dl_memoryFit_first) ?
@@ -133,8 +136,9 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 	printf("\t.lastBlock = %lli,\n", memoryAllocation.lastBlock);
 	printf("\t.blockList_length = %llu,\n", memoryAllocation.blockList_length);
 	printf("\t.blockList_indexOfBlockList = %lli,\n", memoryAllocation.blockList_indexOfBlockList);
-	printf("\t.blockList_indexOfBlockList = {\n");
+	printf("\t.blockList_blockList = { /* %llu */\n", memoryAllocation.blockList);
 	for (dl_size_t i = 0; i < memoryAllocation.blockList_length; i++) {
+		fflush(stdout); fflush(stderr);
 		if (memoryAllocation.blockList[i].allocated) {
 			if (memoryAllocation.blockList[i].unlinked) {
 				printf(COLOR_RED);
@@ -151,7 +155,7 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 				printf(COLOR_YELLOW);
 			}
 		}
-		printf("\t\t(dl_memoryBlock_t) {\n");
+		printf("\t\t(dl_memoryBlock_t) { /* %llu */\n", i);
 		printf("\t\t\t.block = %llu, /* offset = %llu */\n", memoryAllocation.blockList[i].block, memoryAllocation.blockList[i].block - memoryAllocation.memory);
 		printf("\t\t\t.block_size = %llu,\n", memoryAllocation.blockList[i].block_size);
 		printf("\t\t\t.allocated = %s,\n", memoryAllocation.blockList[i].allocated ? "true" : "false");
@@ -160,9 +164,162 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 		printf("\t\t\t.nextBlock = %lli,\n", memoryAllocation.blockList[i].nextBlock);
 		printf("\t\t},\n");
 		printf(COLOR_NORMAL);
+		fflush(stdout); fflush(stderr);
 	}
 	printf("\t},\n");
 	printf("}\n");
+}
+
+dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation) {
+	dl_error_t error = dl_error_ok;
+	
+	dl_memoryBlock_t blockListEntry;
+	
+	/* Main structure checks */
+	
+	// fit
+	if ((memoryAllocation.fit < 0) || (memoryAllocation.fit > dl_memoryFit_worst)) {
+		printf("memoryAllocation.fit is out of range: %i\n", memoryAllocation.fit);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// mostRecentBlock
+	if ((memoryAllocation.mostRecentBlock < -1) || (memoryAllocation.mostRecentBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+		printf("memoryAllocation.mostRecentBlock is out of range: %lli\n", memoryAllocation.mostRecentBlock);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// firstBlock
+	if ((memoryAllocation.firstBlock < -1) || (memoryAllocation.firstBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+		printf("memoryAllocation.firstBlock is out of range: %lli\n", memoryAllocation.firstBlock);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// lastBlock
+	if ((memoryAllocation.lastBlock < -1) || (memoryAllocation.lastBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+		printf("memoryAllocation.lastBlock is out of range: %lli\n", memoryAllocation.lastBlock);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// blockList
+	if (((unsigned char *) memoryAllocation.blockList < (unsigned char *) memoryAllocation.memory)
+	 || ((unsigned char *) memoryAllocation.blockList >= (unsigned char *) memoryAllocation.memory + memoryAllocation.size)) {
+		printf("memoryAllocation.blockList is out of range: %llu\n", memoryAllocation.blockList);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// blockList_length
+	if (((unsigned char *) memoryAllocation.blockList + memoryAllocation.blockList_length * sizeof(dl_memoryBlock_t))
+	   > (unsigned char *) memoryAllocation.memory + memoryAllocation.size) {
+		printf("memoryAllocation.blockList_length is out of range: %llu\n", memoryAllocation.blockList_length);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// blockList_indexOfBlockList
+	if ((memoryAllocation.blockList_indexOfBlockList < -1) || (memoryAllocation.blockList_indexOfBlockList >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+		printf("memoryAllocation.blockList_indexOfBlockList is out of range: %lli\n", memoryAllocation.blockList_indexOfBlockList);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	/* Block list checks */
+	blockListEntry = memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList];
+	
+	// First check the block list's self reference.
+	
+	// previousBlock
+	if ((blockListEntry.previousBlock < -1) || (blockListEntry.previousBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].previousBlock is out of range: %lli\n", blockListEntry.previousBlock);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// nextBlock
+	if ((blockListEntry.nextBlock < -1) || (blockListEntry.nextBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].nextBlock is out of range: %lli\n", blockListEntry.nextBlock);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// block_size
+	if (blockListEntry.block_size != memoryAllocation.blockList_length * sizeof(dl_memoryBlock_t)) {
+		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].block_size is not equal to memoryAllocation.blockList_length: %llu\n",
+		    blockListEntry.block_size);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// block
+	if ((unsigned char *) blockListEntry.block != (unsigned char *) memoryAllocation.blockList) {
+		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].block is not equal to memoryAllocation.blockList_length: %llu\n",
+		    blockListEntry.block);
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	// Second, check the rest of block list.
+	
+	for (dl_size_t i = 0; i < memoryAllocation.blockList_length; i++) {
+		blockListEntry = memoryAllocation.blockList[i];
+		
+		if (blockListEntry.unlinked) {
+			continue;
+		}
+		
+		// previousBlock
+		if ((blockListEntry.previousBlock < -1) || (blockListEntry.previousBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+			printf("memoryAllocation.blockList[%llu].previousBlock is out of range: %lli\n", i, blockListEntry.previousBlock);
+			error = dl_error_invalidValue;
+			goto l_cleanup;
+		}
+		
+		// nextBlock
+		if ((blockListEntry.nextBlock < -1) || (blockListEntry.nextBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+			printf("memoryAllocation.blockList[%llu].nextBlock is out of range: %lli\n", i, blockListEntry.nextBlock);
+			error = dl_error_invalidValue;
+			goto l_cleanup;
+		}
+		
+		// block
+		if (((unsigned char *) blockListEntry.block < (unsigned char *) memoryAllocation.memory)
+		 || ((unsigned char *) blockListEntry.block > (unsigned char *) memoryAllocation.memory + memoryAllocation.size)) {
+			printf("memoryAllocation.blockList[%llu].block is outsize: %llu\n",
+			    i, blockListEntry.block);
+			error = dl_error_invalidValue;
+			goto l_cleanup;
+		}
+		
+		// block_size
+		if (blockListEntry.nextBlock != -1) {
+			if ((unsigned char *) blockListEntry.block + blockListEntry.block_size
+			  > (unsigned char *) memoryAllocation.blockList[blockListEntry.nextBlock].block) {
+				printf("memoryAllocation.blockList[%llu].block_size overlaps with another block: block %llu, nextBlock %llu\n",
+				    i, blockListEntry.block_size, blockListEntry.nextBlock);
+				error = dl_error_invalidValue;
+				goto l_cleanup;
+			}
+		}
+		else {
+			if ((unsigned char *) blockListEntry.block + blockListEntry.block_size
+			  > (unsigned char *) memoryAllocation.memory + memoryAllocation.size) {
+				printf("memoryAllocation.blockList[%llu].block_size exceeds the bounds of allocated memory: %llu\n",
+				    i, blockListEntry.block_size);
+				error = dl_error_invalidValue;
+				goto l_cleanup;
+			}
+		}
+	}
+	
+	error = dl_error_ok;
+	l_cleanup:
+	
+	return error;
 }
 
 // Ask specifically for fit, because who knows, maybe there's exceptions.
@@ -266,7 +423,12 @@ dl_error_t dl_memory_mergeBlocks(dl_memoryAllocation_t *memoryAllocation, dl_ptr
 		memoryAllocation->blockList[previousBlock].block_size += memoryAllocation->blockList[*block].block_size;
 		// Unlink *block.
 		memoryAllocation->blockList[previousBlock].nextBlock = nextBlock;
-		memoryAllocation->blockList[nextBlock].previousBlock = previousBlock;
+		if (nextBlock == -1) {
+			memoryAllocation->lastBlock = nextBlock;
+		}
+		else {
+			memoryAllocation->blockList[nextBlock].previousBlock = previousBlock;
+		}
 		// Free *block's entry.
 		memoryAllocation->blockList[*block].unlinked = dl_true;
 		// Make *block point to previousBlock.
@@ -312,6 +474,7 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 	dl_ptrdiff_t tempBlock = -1;
 	dl_ptrdiff_t newBlock = -1;
 	dl_ptrdiff_t unlinkedBlock = -1;
+	void *tempMemory = dl_null;
 	
 	/*
 	What we are trying to do here is find a safe place in memory to put the
@@ -370,8 +533,8 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 					
 					// Copy the block list to the new block.
 					if (oldBlock != newBlock) {
-						printf("1a\n");
-						error = dl_memcopy(memoryAllocation->blockList[newBlock].block,
+						tempMemory = memoryAllocation->blockList[newBlock].block;
+						error = dl_memcopy(tempMemory,
 						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
 						                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
 						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
@@ -379,13 +542,12 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 							goto l_cleanup;
 						}
 						
-						memoryAllocation->blockList[newBlock].allocated = dl_true;
+						// memoryAllocation->blockList[newBlock].allocated = dl_true;
 						
 						// Transfer control to the new block.
-						memoryAllocation->blockList = memoryAllocation->blockList[newBlock].block;
+						memoryAllocation->blockList = tempMemory;
 						memoryAllocation->blockList_indexOfBlockList = newBlock;
 					}
-					printf("1b\n");
 					memoryAllocation->blockList_length += 2;
 					
 					// Split.
@@ -406,11 +568,9 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 					
 					if (tempBlock != -1) {
 						memoryAllocation->blockList[tempBlock].previousBlock = newBlock;
-						printf("1c1\n");
 					}
 					else {
 						memoryAllocation->lastBlock = newBlock;
-						printf("1c2\n");
 					}
 					
 					memoryAllocation->blockList[newBlock].block_size = memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
@@ -419,8 +579,8 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 					// We got (un)lucky. Add a dummy descriptor.
 					// If the block is the same, then we're good. Otherwise, we need to copy.
 					if (oldBlock != newBlock) {
-						printf("2a\n");
-						error = dl_memcopy(memoryAllocation->blockList[newBlock].block,
+						tempMemory = memoryAllocation->blockList[newBlock].block;
+						error = dl_memcopy(tempMemory,
 						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
 						                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
 						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
@@ -428,13 +588,12 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 							goto l_cleanup;
 						}
 						
-						memoryAllocation->blockList[newBlock].allocated = dl_true;
+						// memoryAllocation->blockList[newBlock].allocated = dl_true;
 						
 						// Transfer to the new blockList.
-						memoryAllocation->blockList = memoryAllocation->blockList[newBlock].block;
+						memoryAllocation->blockList = tempMemory;
 						memoryAllocation->blockList_indexOfBlockList = newBlock;
 					}
-					printf("2b\n");
 					memoryAllocation->blockList_length += 2;
 					
 					// Get index of dummy descriptor.
@@ -453,26 +612,25 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 				
 				// Copy the block list to the new block.
 				if (oldBlock != newBlock) {
-					printf("3a\n");
-					error = dl_memcopy(memoryAllocation->blockList[newBlock].block,
+					tempMemory = memoryAllocation->blockList[newBlock].block;
+					error = dl_memcopy(tempMemory,
 					                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
 					                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
 					                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
 					if (error) {
 						goto l_cleanup;
 					}
+					// Old list is now corrupted.
 					
-					memoryAllocation->blockList[newBlock].allocated = dl_true;
+					// memoryAllocation->blockList[newBlock].allocated = dl_true;
 					
 					// Transfer control to the new block.
-					memoryAllocation->blockList = memoryAllocation->blockList[newBlock].block;
+					memoryAllocation->blockList = tempMemory;
 					memoryAllocation->blockList_indexOfBlockList = newBlock;
 				}
-				printf("3b\n");
 				memoryAllocation->blockList_length += 1;
 				
 				// Split.
-				printf("newBlock %lli\n", newBlock);
 				tempBlock = memoryAllocation->blockList[newBlock].nextBlock;
 				memoryAllocation->blockList[newBlock].nextBlock = unlinkedBlock;
 				
@@ -487,11 +645,9 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 				memoryAllocation->blockList[unlinkedBlock].previousBlock = newBlock;
 				
 				if (tempBlock != -1) {
-					printf("3c1\n");
 					memoryAllocation->blockList[tempBlock].previousBlock = unlinkedBlock;
 				}
 				else {
-					printf("3c2\n");
 					memoryAllocation->lastBlock = unlinkedBlock;
 				}
 				
@@ -501,8 +657,8 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 		else {
 			// If the block is the same, then we're good. Otherwise, we need to copy.
 			if (oldBlock != newBlock) {
-				printf("4a\n");
-				error = dl_memcopy(memoryAllocation->blockList[newBlock].block,
+				tempMemory = memoryAllocation->blockList[newBlock].block;
+				error = dl_memcopy(tempMemory,
 				                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
 				                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
 				                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
@@ -510,13 +666,12 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 					goto l_cleanup;
 				}
 				
-				memoryAllocation->blockList[newBlock].allocated = dl_true;
+				// memoryAllocation->blockList[newBlock].allocated = dl_true;
 				
 				// Transfer control to the new block.
-				memoryAllocation->blockList = memoryAllocation->blockList[newBlock].block;
+				memoryAllocation->blockList = tempMemory;
 				memoryAllocation->blockList_indexOfBlockList = newBlock;
 			}
-			printf("4b\n");
 			memoryAllocation->blockList_length += 1;
 		}
 		
@@ -525,7 +680,12 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 	}
 	else {
 		// Woo-hoo! We found an unlinked block!
-		printf("5\n");
+	}
+	
+	memoryAllocation->blockList[unlinkedBlock].unlinked = dl_true;
+	error = dl_memory_checkHealth(*memoryAllocation);
+	if (error) {
+		goto l_cleanup;
 	}
 	
 	error = dl_memory_findBlock(memoryAllocation, block, index, dl_memoryFit_first);
