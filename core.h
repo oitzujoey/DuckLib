@@ -11,6 +11,9 @@ typedef long long dl_ptrdiff_t;
 
 #define dl_null ((void *) 0)
 
+#define dl_max(a,b) ((a > b) ? (a) : (b))
+#define dl_min(a,b) ((a < b) ? (a) : (b))
+
 typedef enum {
 	dl_error_ok = 0,
 	dl_error_invalidValue,

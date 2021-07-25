@@ -299,7 +299,14 @@ dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation) {
 		if (blockListEntry.nextBlock != -1) {
 			if ((unsigned char *) blockListEntry.block + blockListEntry.block_size
 			  > (unsigned char *) memoryAllocation.blockList[blockListEntry.nextBlock].block) {
-				printf("memoryAllocation.blockList[%llu].block_size overlaps with another block: block %llu, nextBlock %llu\n",
+				printf("memoryAllocation.blockList[%llu].block_size overlaps with another block: block_size %llu, nextBlock %llu\n",
+				    i, blockListEntry.block_size, blockListEntry.nextBlock);
+				error = dl_error_invalidValue;
+				goto l_cleanup;
+			}
+			else if ((unsigned char *) blockListEntry.block + blockListEntry.block_size
+			  < (unsigned char *) memoryAllocation.blockList[blockListEntry.nextBlock].block) {
+				printf("memoryAllocation.blockList[%llu].block_size leaves dead space between another block: block_size %llu, nextBlock %llu\n",
 				    i, blockListEntry.block_size, blockListEntry.nextBlock);
 				error = dl_error_invalidValue;
 				goto l_cleanup;
@@ -322,6 +329,26 @@ dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation) {
 	return error;
 }
 
+dl_error_t dl_memory_pointerToBlock(dl_memoryAllocation_t memoryAllocation, dl_ptrdiff_t *block, void **memory) {
+	dl_error_t error = dl_error_ok;
+	
+	*block = -1;
+	for (dl_ptrdiff_t i = 0; i < memoryAllocation.blockList_length; i++) {
+		if (!memoryAllocation.blockList[i].unlinked && (memoryAllocation.blockList[i].block == *memory)) {
+			*block = i;
+		}
+	}
+	if (*block == -1) {
+		error = dl_error_danglingPointer;
+		goto l_cleanup;
+	}
+	
+	error = dl_error_ok;
+	l_cleanup:
+	
+	return error;
+}
+
 // Ask specifically for fit, because who knows, maybe there's exceptions.
 dl_error_t dl_memory_findBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdiff_t *block, dl_size_t size, dl_memoryFit_t fit) {
 	dl_error_t error = dl_error_ok;
@@ -335,10 +362,6 @@ dl_error_t dl_memory_findBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdi
 	}
 	else {
 		currentBlock = memoryAllocation->firstBlock;
-	}
-	
-	if (currentBlock < 0) {
-		printf("negative\n");
 	}
 	
 	// Find the smallest of the empty blocks.
@@ -395,50 +418,70 @@ dl_error_t dl_memory_findBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdi
 	return error;
 }
 
-// We simply mark deleted block descriptors as unlinked because dl_memory_pushBlockEntry uses this function and we want to touch the table as little as possible.
-dl_error_t dl_memory_mergeBlocks(dl_memoryAllocation_t *memoryAllocation, dl_ptrdiff_t *block) {
-	dl_error_t error = dl_error_ok;
+void dl_memory_mergeBlockAfter(dl_memoryAllocation_t *memoryAllocation, dl_bool_t *merged, dl_ptrdiff_t block) {
 	
-	dl_size_t previousBlock = memoryAllocation->blockList[*block].previousBlock;
-	dl_size_t nextBlock = memoryAllocation->blockList[*block].nextBlock;
+	dl_size_t nextBlock = memoryAllocation->blockList[block].nextBlock;
 	
 	if ((nextBlock != -1) && !memoryAllocation->blockList[nextBlock].allocated) {
 		// Increase size of *block.
-		memoryAllocation->blockList[*block].block_size += memoryAllocation->blockList[nextBlock].block_size;
+		memoryAllocation->blockList[block].block_size += memoryAllocation->blockList[nextBlock].block_size;
 		// Unlink nextBlock.
-		memoryAllocation->blockList[*block].nextBlock = memoryAllocation->blockList[nextBlock].nextBlock;
-		if (memoryAllocation->blockList[*block].nextBlock == -1) {
-			memoryAllocation->lastBlock = *block;
+		memoryAllocation->blockList[block].nextBlock = memoryAllocation->blockList[nextBlock].nextBlock;
+		if (memoryAllocation->blockList[block].nextBlock == -1) {
+			memoryAllocation->lastBlock = block;
 		}
 		else {
-			memoryAllocation->blockList[memoryAllocation->blockList[*block].nextBlock].previousBlock = *block;
+			memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].previousBlock = block;
 		}
 		// Free nextBlock's entry.
 		memoryAllocation->blockList[nextBlock].unlinked = dl_true;
-		nextBlock = memoryAllocation->blockList[*block].nextBlock;
+		
+		if (merged) {
+			*merged = dl_true;
+		}
 	}
+	else {
+		if (merged) {
+			*merged = dl_false;
+		}
+	}
+}
+
+void dl_memory_mergeBlockBefore(dl_memoryAllocation_t *memoryAllocation, dl_bool_t *merged, dl_ptrdiff_t block) {
+	
+	dl_size_t previousBlock = memoryAllocation->blockList[block].previousBlock;
+	dl_size_t nextBlock = memoryAllocation->blockList[block].nextBlock;
 	
 	if ((previousBlock != -1) && !memoryAllocation->blockList[previousBlock].allocated) {
 		// Increase size of previousBlock.
-		memoryAllocation->blockList[previousBlock].block_size += memoryAllocation->blockList[*block].block_size;
-		// Unlink *block.
-		memoryAllocation->blockList[previousBlock].nextBlock = nextBlock;
-		if (nextBlock == -1) {
-			memoryAllocation->lastBlock = nextBlock;
+		memoryAllocation->blockList[block].block_size += memoryAllocation->blockList[previousBlock].block_size;
+		memoryAllocation->blockList[block].block -= memoryAllocation->blockList[previousBlock].block_size;
+		
+		memoryAllocation->blockList[block].previousBlock = memoryAllocation->blockList[previousBlock].previousBlock;
+		if (memoryAllocation->blockList[block].previousBlock == -1) {
+			memoryAllocation->firstBlock = block;
 		}
 		else {
-			memoryAllocation->blockList[nextBlock].previousBlock = previousBlock;
+			memoryAllocation->blockList[memoryAllocation->blockList[block].previousBlock].nextBlock = block;
 		}
-		// Free *block's entry.
-		memoryAllocation->blockList[*block].unlinked = dl_true;
-		// Make *block point to previousBlock.
-		*block = previousBlock;
+		// Free previousBlock's entry.
+		memoryAllocation->blockList[previousBlock].unlinked = dl_true;
+		
+		if (merged) {
+			*merged = dl_true;
+		}
 	}
-	
-	// error = dl_error_ok;
-	// l_cleanup:
-	
-	return error;
+	else {
+		if (merged) {
+			*merged = dl_false;
+		}
+	}
+}
+
+// We simply mark deleted block descriptors as unlinked because dl_memory_pushBlockEntry uses this function and we want to touch the table as little as possible.
+void dl_memory_mergeBlocks(dl_memoryAllocation_t *memoryAllocation, dl_bool_t *merged, dl_ptrdiff_t block) {
+	dl_memory_mergeBlockAfter(memoryAllocation, merged, block);
+	dl_memory_mergeBlockBefore(memoryAllocation, merged, block);
 }
 
 // // Remove unlinked block descriptors.
@@ -466,8 +509,131 @@ dl_error_t dl_memory_mergeBlocks(dl_memoryAllocation_t *memoryAllocation, dl_ptr
 // 	return error;
 // }
 
+dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation, dl_size_t entries_number) {
+	dl_error_t error = dl_error_ok;
+	
+	dl_size_t entries_left = entries_number;
+	dl_size_t unlinkedBlock_number = 0;
+	dl_ptrdiff_t newBlock = -1;
+	dl_bool_t merged = dl_false;
+	void *tempMemory = dl_null;
+	dl_ptrdiff_t extraBlock = -1;
+	dl_memoryBlock_t *blockListEntry = dl_null;
+	
+	// Use unlinked descriptors if possible.
+	for (dl_ptrdiff_t i = 0; i < memoryAllocation->blockList_length; i++) {
+		if (memoryAllocation->blockList[i].unlinked) {
+			unlinkedBlock_number++;
+		}
+	}
+	
+	entries_left = (entries_left > unlinkedBlock_number) ? entries_left - unlinkedBlock_number : 0;
+	
+	// If we still need descriptors, then realloc the table.
+	if (entries_left) {
+		
+		memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].allocated = dl_false;
+		
+		/* No error */ dl_memory_mergeBlockAfter(memoryAllocation, &merged, memoryAllocation->blockList_indexOfBlockList);
+		
+		if (memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block_size
+		    < (memoryAllocation->blockList_length + entries_left) * sizeof(dl_memoryBlock_t)) {
+			
+			// Need to move.
+			
+			entries_left++;
+			if (merged) {
+				--entries_left;
+			}
+			
+			/* No error */ dl_memory_mergeBlockBefore(memoryAllocation, &merged, memoryAllocation->blockList_indexOfBlockList);
+			
+			if (merged) {
+				entries_left = (entries_left > 1) ? entries_left - 1 : 0;
+			}
+		
+			// Find a larger memory block for the table.
+			error = dl_memory_findBlock(memoryAllocation, &newBlock, (memoryAllocation->blockList_length + entries_left) * sizeof(dl_memoryBlock_t),
+			                            memoryAllocation->fit);
+			if (error) {
+				goto l_cleanup;
+			}
+			
+			// Copy block list to new location.
+			tempMemory = memoryAllocation->blockList[newBlock].block;
+			error = dl_memcopy(tempMemory,
+			                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
+			                   memoryAllocation->blockList,
+			                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
+			if (error) {
+				goto l_cleanup;
+			}
+			
+			// Transfer control to the new block.
+			memoryAllocation->blockList = tempMemory;
+			memoryAllocation->blockList_indexOfBlockList = newBlock;
+		}
+		
+		memoryAllocation->blockList_length += entries_left;
+		
+		// Initialize new blocks to unlinked.
+		for (dl_size_t i = 0; i < entries_left; i++) {
+			memoryAllocation->blockList[i + (memoryAllocation->blockList_length - entries_left)].unlinked = dl_true;
+		}
+		
+		if (memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block_size
+		    > memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t)) {
+			
+			blockListEntry = &memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList];
+			
+			// Split block.
+			
+			// Find unlinked descriptor.
+			for (dl_size_t i = memoryAllocation->blockList_length - 1; i >= 0; --i) {
+				if (memoryAllocation->blockList[i].unlinked) {
+					extraBlock = i;
+					break;
+				}
+			}
+			if (extraBlock == -1) {
+				error = dl_error_cantHappen;
+				goto l_cleanup;
+			}
+			
+			memoryAllocation->blockList[extraBlock].block = (unsigned char *) blockListEntry->block
+			                                              + memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
+			// Decrease size of blocks.
+			memoryAllocation->blockList[extraBlock].block_size = blockListEntry->block_size - memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
+			blockListEntry->block_size = memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
+			
+			// Link extra block after block list block.
+			memoryAllocation->blockList[extraBlock].nextBlock = blockListEntry->nextBlock;
+			if (blockListEntry->nextBlock == -1) {
+				memoryAllocation->lastBlock = extraBlock;
+			}
+			else {
+				memoryAllocation->blockList[blockListEntry->nextBlock].previousBlock = extraBlock;
+			}
+			memoryAllocation->blockList[extraBlock].previousBlock = memoryAllocation->blockList_indexOfBlockList;
+			blockListEntry->nextBlock = extraBlock;
+			memoryAllocation->blockList[extraBlock].unlinked = dl_false;
+			
+			memoryAllocation->blockList[extraBlock].allocated = dl_false;
+			
+			entries_left = (entries_left > 1) ? entries_left - 1 : 0;
+		}
+		
+		memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].allocated = dl_true;
+	}
+	
+	error = dl_error_ok;
+	l_cleanup:
+	
+	return error;
+}
+
 // New block will be at the address (*block)->nextBlock after the function returns.
-dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdiff_t *block, dl_size_t index) {
+dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdiff_t block, dl_size_t index) {
 	dl_error_t error = dl_error_ok;
 	
 	dl_ptrdiff_t oldBlock = memoryAllocation->blockList_indexOfBlockList;
@@ -484,7 +650,10 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 	simple as possible. I may have failed in that endeavor.
 	*/
 	
-	// Find an unlinked descriptor for the NEW BLOCK if possible.
+	/*
+	Find an unlinked descriptor for the new block. This should have been
+	allocated beforehand, hence the error.
+	*/
 	for (dl_ptrdiff_t i = 0; i < memoryAllocation->blockList_length; i++) {
 		if (memoryAllocation->blockList[i].unlinked) {
 			unlinkedBlock = i;
@@ -492,272 +661,32 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 		}
 	}
 	if (unlinkedBlock == -1) {
-		// Mark block that the table is currently residing in deleted.
-		memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].allocated = dl_false;
-		
-		// Our table will still be here. We just need to be careful that we don't give the memory to anyone else before we copy it.
-		// The table size will remain unchanged until we run dl_memory_cleanTable (if that function even exists).
-		// This may create unlinked blocks that we can use in a moment. This would be the best case scenario.
-		tempBlock = oldBlock;
-		error = dl_memory_mergeBlocks(memoryAllocation, &tempBlock);
-		if (error) {
-			goto l_cleanup;
-		}
-		
-		// +1 because we are expanding the list by one.
-		error = dl_memory_findBlock(memoryAllocation, &newBlock, (memoryAllocation->blockList_length + 1) * sizeof(dl_memoryBlock_t), dl_memoryFit_first);
-		if (error) {
-			goto l_cleanup;
-		}
-		if ((memoryAllocation->blockList_length + 1) * sizeof(dl_memoryBlock_t) != memoryAllocation->blockList[newBlock].block_size) {
-			// Split.
-			// Note reuse of `unlinkedBlock`.
-			// Find an unlinked descriptor for the BLOCK LIST if possible.
-			for (dl_ptrdiff_t i = 0; i < memoryAllocation->blockList_length; i++) {
-				if (memoryAllocation->blockList[i].unlinked) {
-					unlinkedBlock = i;
-					break;
-				}
-			}
-			if (unlinkedBlock == -1) {
-				// Doh! We need to create one.
-				// Find a block with more room.
-				// +2 for the original push + the split.
-				error = dl_memory_findBlock(memoryAllocation, &newBlock, (memoryAllocation->blockList_length + 2) * sizeof(dl_memoryBlock_t), dl_memoryFit_first);
-				if (error) {
-					goto l_cleanup;
-				}
-				
-				if ((memoryAllocation->blockList_length + 2) * sizeof(dl_memoryBlock_t) != memoryAllocation->blockList[newBlock].block_size) {
-					// This is what we prepared for. Split the block.
-					
-					// Copy the block list to the new block.
-					if (oldBlock != newBlock) {
-						tempMemory = memoryAllocation->blockList[newBlock].block;
-						error = dl_memcopy(tempMemory,
-						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
-						                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
-						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
-						if (error) {
-							goto l_cleanup;
-						}
-						
-						// memoryAllocation->blockList[newBlock].allocated = dl_true;
-						
-						// Transfer control to the new block.
-						memoryAllocation->blockList = tempMemory;
-						memoryAllocation->blockList_indexOfBlockList = newBlock;
-					}
-					memoryAllocation->blockList_length += 2;
-					
-					// Split.
-					
-					// Second to last entry.
-					tempBlock = memoryAllocation->blockList[newBlock].nextBlock;
-					memoryAllocation->blockList[newBlock].nextBlock = memoryAllocation->blockList_length - 2;
-					
-					memoryAllocation->blockList[memoryAllocation->blockList[newBlock].nextBlock].unlinked = dl_false;
-					memoryAllocation->blockList[memoryAllocation->blockList[newBlock].nextBlock].allocated = dl_false;
-					memoryAllocation->blockList[memoryAllocation->blockList[newBlock].nextBlock].block = memoryAllocation->blockList[newBlock].block
-					    + memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
-					memoryAllocation->blockList[memoryAllocation->blockList[newBlock].nextBlock].block_size
-					    = memoryAllocation->blockList[newBlock].block_size
-					    - memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
-					memoryAllocation->blockList[memoryAllocation->blockList[newBlock].nextBlock].nextBlock = tempBlock;
-					memoryAllocation->blockList[memoryAllocation->blockList[newBlock].nextBlock].previousBlock = newBlock;
-					
-					if (tempBlock != -1) {
-						memoryAllocation->blockList[tempBlock].previousBlock = newBlock;
-					}
-					else {
-						memoryAllocation->lastBlock = newBlock;
-					}
-					
-					memoryAllocation->blockList[newBlock].block_size = memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
-				}
-				else {
-					// We got (un)lucky. Add a dummy descriptor.
-					// If the block is the same, then we're good. Otherwise, we need to copy.
-					if (oldBlock != newBlock) {
-						tempMemory = memoryAllocation->blockList[newBlock].block;
-						error = dl_memcopy(tempMemory,
-						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
-						                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
-						                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
-						if (error) {
-							goto l_cleanup;
-						}
-						
-						// memoryAllocation->blockList[newBlock].allocated = dl_true;
-						
-						// Transfer to the new blockList.
-						memoryAllocation->blockList = tempMemory;
-						memoryAllocation->blockList_indexOfBlockList = newBlock;
-					}
-					memoryAllocation->blockList_length += 2;
-					
-					// Get index of dummy descriptor.
-					tempBlock = memoryAllocation->blockList_length - 2;
-					
-					memoryAllocation->blockList[tempBlock].unlinked = dl_true;
-					memoryAllocation->blockList[tempBlock].allocated = dl_false;
-					memoryAllocation->blockList[tempBlock].block = dl_null;
-					memoryAllocation->blockList[tempBlock].block_size = 0;
-					memoryAllocation->blockList[tempBlock].nextBlock = -1;
-					memoryAllocation->blockList[tempBlock].previousBlock = -1;
-				}
-			}
-			else {
-				// Split the block.
-				
-				// Copy the block list to the new block.
-				if (oldBlock != newBlock) {
-					tempMemory = memoryAllocation->blockList[newBlock].block;
-					error = dl_memcopy(tempMemory,
-					                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
-					                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
-					                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
-					if (error) {
-						goto l_cleanup;
-					}
-					// Old list is now corrupted.
-					
-					// memoryAllocation->blockList[newBlock].allocated = dl_true;
-					
-					// Transfer control to the new block.
-					memoryAllocation->blockList = tempMemory;
-					memoryAllocation->blockList_indexOfBlockList = newBlock;
-				}
-				memoryAllocation->blockList_length += 1;
-				
-				// Split.
-				tempBlock = memoryAllocation->blockList[newBlock].nextBlock;
-				memoryAllocation->blockList[newBlock].nextBlock = unlinkedBlock;
-				
-				memoryAllocation->blockList[unlinkedBlock].unlinked = dl_false;
-				memoryAllocation->blockList[unlinkedBlock].allocated = dl_false;
-				memoryAllocation->blockList[unlinkedBlock].block = memoryAllocation->blockList[newBlock].block
-				                                                 + memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
-				memoryAllocation->blockList[unlinkedBlock].block_size
-				    = memoryAllocation->blockList[newBlock].block_size
-				    - memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
-				memoryAllocation->blockList[unlinkedBlock].nextBlock = tempBlock;
-				memoryAllocation->blockList[unlinkedBlock].previousBlock = newBlock;
-				
-				if (tempBlock != -1) {
-					memoryAllocation->blockList[tempBlock].previousBlock = unlinkedBlock;
-				}
-				else {
-					memoryAllocation->lastBlock = unlinkedBlock;
-				}
-				
-				memoryAllocation->blockList[newBlock].block_size = memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
-			}
-		}
-		else {
-			// If the block is the same, then we're good. Otherwise, we need to copy.
-			if (oldBlock != newBlock) {
-				tempMemory = memoryAllocation->blockList[newBlock].block;
-				error = dl_memcopy(tempMemory,
-				                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
-				                   memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block,
-				                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
-				if (error) {
-					goto l_cleanup;
-				}
-				
-				// memoryAllocation->blockList[newBlock].allocated = dl_true;
-				
-				// Transfer control to the new block.
-				memoryAllocation->blockList = tempMemory;
-				memoryAllocation->blockList_indexOfBlockList = newBlock;
-			}
-			memoryAllocation->blockList_length += 1;
-		}
-		
-		memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].allocated = dl_true;
-		unlinkedBlock = memoryAllocation->blockList_length - 1;
-	}
-	else {
-		// Woo-hoo! We found an unlinked block!
-	}
-	
-	memoryAllocation->blockList[unlinkedBlock].unlinked = dl_true;
-	error = dl_memory_checkHealth(*memoryAllocation);
-	if (error) {
+		error = dl_error_shouldntHappen;
 		goto l_cleanup;
 	}
 	
-	error = dl_memory_findBlock(memoryAllocation, block, index, dl_memoryFit_first);
-	if (error) {
-		goto l_cleanup;
-	}
-	
-	// OK. Now that we are done with that MESS. We can finally do what we were doing in the first place: creating a new block.
-	// Actually, we have the block now. All we have to do now is initialize it.
-	// This block will be inserted after the given block.
-	memoryAllocation->blockList[unlinkedBlock].unlinked = dl_false;
 	memoryAllocation->blockList[unlinkedBlock].allocated = dl_false;
-	memoryAllocation->blockList[unlinkedBlock].block = memoryAllocation->blockList[*block].block + index;
-	memoryAllocation->blockList[unlinkedBlock].block_size = memoryAllocation->blockList[*block].block_size - index;
-	memoryAllocation->blockList[unlinkedBlock].nextBlock = memoryAllocation->blockList[*block].nextBlock;
-	memoryAllocation->blockList[unlinkedBlock].previousBlock = *block;
 	
-	if (memoryAllocation->blockList[unlinkedBlock].nextBlock != -1) {
-		memoryAllocation->blockList[memoryAllocation->blockList[unlinkedBlock].nextBlock].previousBlock = unlinkedBlock;
-	}
-	else {
+	memoryAllocation->blockList[unlinkedBlock].block = (unsigned char *) memoryAllocation->blockList[block].block + index;
+	memoryAllocation->blockList[unlinkedBlock].block_size = memoryAllocation->blockList[block].block_size - index;
+	memoryAllocation->blockList[block].block_size = index;
+	
+	memoryAllocation->blockList[unlinkedBlock].nextBlock = memoryAllocation->blockList[block].nextBlock;
+	if (memoryAllocation->blockList[block].nextBlock == -1) {
 		memoryAllocation->lastBlock = unlinkedBlock;
 	}
-	
-	memoryAllocation->blockList[*block].nextBlock = unlinkedBlock;
-	memoryAllocation->blockList[*block].block_size = index;
-	
-	
-	memoryAllocation->mostRecentBlock = *block;
-	
-	// Done! (Except for bugs.)
+	else {
+		memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].previousBlock = unlinkedBlock;
+	}
+	memoryAllocation->blockList[unlinkedBlock].previousBlock = block;
+	memoryAllocation->blockList[block].nextBlock = unlinkedBlock;
+	memoryAllocation->blockList[unlinkedBlock].unlinked = dl_false;
 	
 	error = dl_error_ok;
 	l_cleanup:
 	
 	return error;
 }
-
-// // New block will be at the address (*block)->nextBlock after the function returns.
-// dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdiff_t *block, dl_size_t index) {
-// 	dl_error_t error = dl_error_ok;
-	
-// 	dl_ptrdiff_t thirdBlock = memoryAllocation->blockList[*block].nextBlock;
-// 	dl_ptrdiff_t secondBlock = -1;
-	
-// 	// Allocate memory for the block structure.
-// 	error = dl_memory_pushBlockEntry(memoryAllocation, &secondBlock);
-// 	if (error) {
-// 		goto l_cleanup;
-// 	}
-	
-	
-// 	memoryAllocation->blockList[*block].nextBlock = secondBlock;
-	
-// 	memoryAllocation->blockList[secondBlock].previousBlock = *block;
-// 	memoryAllocation->blockList[secondBlock].nextBlock = thirdBlock;
-// 	memoryAllocation->blockList[secondBlock].block = &memoryAllocation->blockList[*block].block[index];
-	
-// 	if (thirdBlock != -1) {
-// 		memoryAllocation->blockList[thirdBlock].previousBlock = secondBlock;
-// 	}
-	
-	
-// 	memoryAllocation->blockList[secondBlock].block_size = memoryAllocation->blockList[*block].block_size - index;
-// 	memoryAllocation->blockList[*block].block_size = index;
-	
-	
-// 	error = dl_error_ok;
-// 	l_cleanup:
-	
-// 	return error;
-// }
 
 dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size) {
 	dl_error_t error = dl_error_ok;
@@ -769,6 +698,11 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 		goto l_cleanup;
 	}
 	
+	error = dl_memory_reserveTableEntries(memoryAllocation, 1);
+	if (error) {
+		goto l_cleanup;
+	}
+	
 	// Find a fitting block.
 	error = dl_memory_findBlock(memoryAllocation, &block, size, memoryAllocation->fit);
 	if (error) {
@@ -777,7 +711,7 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 	
 	// Split.
 	if (memoryAllocation->blockList[block].block_size != size) {
-		error = dl_memory_splitBlock(memoryAllocation, &block, size);
+		error = dl_memory_splitBlock(memoryAllocation, block, size);
 		if (error) {
 			goto l_cleanup;
 		}
@@ -803,28 +737,112 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory) {
 	dl_error_t error = dl_error_ok;
 	
-	// Find the block.
-	for (dl_ptrdiff_t i = 0; i < memoryAllocation->blockList_length; i++) {
-		if (memoryAllocation->blockList[i].block == *memory) {
-			if (memoryAllocation->blockList[i].allocated) {
-				memoryAllocation->blockList[i].allocated = dl_false;
-				error = dl_memory_mergeBlocks(memoryAllocation, &i);
-				if (error) {
-					goto l_cleanup;
-				}
-				break;
-			}
-			else {
-				error = dl_error_danglingPointer;
-				goto l_cleanup;
-			}
-		}
+	dl_ptrdiff_t block = -1;
+	
+	if (*memory == dl_null) {
+		error = dl_error_nullPointer;
+		goto l_cleanup;
 	}
+	
+	error = dl_memory_pointerToBlock(*memoryAllocation, &block, memory);
+	if (error || (memoryAllocation->blockList[block].allocated == dl_false)) {
+		error = dl_error_danglingPointer;
+		goto l_cleanup;
+	}
+	
+	memoryAllocation->blockList[block].allocated = dl_false;
+	
+	/* No error */ dl_memory_mergeBlocks(memoryAllocation, dl_null, block);
 	
 	error = dl_error_ok;
 	l_cleanup:
 	
 	*memory = dl_null;
+	
+	return error;
+}
+
+dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size) {
+	dl_error_t error = dl_error_ok;
+	
+	dl_ptrdiff_t currentBlock = -1;
+	dl_ptrdiff_t newBlock = -1;
+	dl_ptrdiff_t tempBlock = -1;
+	
+	dl_size_t currentSize = 0;
+	
+	dl_bool_t blockFits = dl_false;
+	
+	if (*memory == dl_null) {
+		error = dl_malloc(memoryAllocation, memory, size);
+		goto l_cleanup;
+	}
+	
+	if (size == 0) {
+		error = dl_error_invalidValue;
+		goto l_cleanup;
+	}
+	
+	error = dl_memory_pointerToBlock(*memoryAllocation, &currentBlock, memory);
+	if (error || (memoryAllocation->blockList[currentBlock].allocated == dl_false)) {
+		error = dl_error_danglingPointer;
+		goto l_cleanup;
+	}
+	
+	// Mark deleted just in case we find that we can expand our block.
+	memoryAllocation->blockList[currentBlock].allocated = dl_false;
+	
+	/* No error */ dl_memory_mergeBlockAfter(memoryAllocation, dl_null, currentBlock);
+	
+	blockFits = (memoryAllocation->blockList[currentBlock].block_size >= size);
+	
+	if (!blockFits) {
+		/* No error */ dl_memory_mergeBlockBefore(memoryAllocation, dl_null, currentBlock);
+	}
+	
+	memoryAllocation->blockList[currentBlock].allocated = dl_true;
+	error = dl_memory_reserveTableEntries(memoryAllocation, 1);
+	if (error) {
+		goto l_cleanup;
+	}
+	memoryAllocation->blockList[currentBlock].allocated = dl_false;
+	
+	newBlock = currentBlock;
+	if (!blockFits) {
+		error = dl_memory_findBlock(memoryAllocation, &newBlock, size, memoryAllocation->fit);
+		if (error) {
+			goto l_cleanup;
+		}
+	}
+	
+	if (memoryAllocation->blockList[newBlock].block_size != size) {
+		error = dl_memory_splitBlock(memoryAllocation, newBlock, size);
+		if (error) {
+			goto l_cleanup;
+		}
+	}
+	
+	if (!blockFits) {
+		// Copy.
+		error = dl_memcopy(memoryAllocation->blockList[newBlock].block, dl_min(size, memoryAllocation->blockList[currentBlock].block_size),
+		                   memoryAllocation->blockList[currentBlock].block, dl_min(size, memoryAllocation->blockList[currentBlock].block_size));
+		if (error) {
+			goto l_cleanup;
+		}
+	}
+	
+	// Mark allocated.
+	memoryAllocation->blockList[newBlock].allocated = dl_true;
+	
+	// Pass the memory.
+	*memory = memoryAllocation->blockList[newBlock].block;
+	
+	error = dl_error_ok;
+	l_cleanup:
+	
+	if (error) {
+		memory = dl_null;
+	}
 	
 	return error;
 }

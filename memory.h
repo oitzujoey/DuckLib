@@ -52,5 +52,6 @@ dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation);
 
 dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory);
+dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 
 #endif // DUCKLIB_MEMORY_H
