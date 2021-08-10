@@ -1,5 +1,5 @@
 
-add_library(DuckLib core.c memory.c)
+add_library(DuckLib core.c memory.c array.c string.c)
 
 target_include_directories(
 	DuckLib
