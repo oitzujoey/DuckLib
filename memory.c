@@ -136,7 +136,7 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 	printf("\t.lastBlock = %lli,\n", memoryAllocation.lastBlock);
 	printf("\t.blockList_length = %llu,\n", memoryAllocation.blockList_length);
 	printf("\t.blockList_indexOfBlockList = %lli,\n", memoryAllocation.blockList_indexOfBlockList);
-	printf("\t.blockList_blockList = { /* %llu */\n", memoryAllocation.blockList);
+	printf("\t.blockList_blockList = { /* %X */\n", memoryAllocation.blockList);
 	for (dl_size_t i = 0; i < memoryAllocation.blockList_length; i++) {
 		fflush(stdout); fflush(stderr);
 		if (memoryAllocation.blockList[i].allocated) {
@@ -156,7 +156,7 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 			}
 		}
 		printf("\t\t(dl_memoryBlock_t) { /* %llu */\n", i);
-		printf("\t\t\t.block = %llu, /* offset = %llu */\n", memoryAllocation.blockList[i].block, memoryAllocation.blockList[i].block - memoryAllocation.memory);
+		printf("\t\t\t.block = %X, /* offset = %llu */\n", memoryAllocation.blockList[i].block, memoryAllocation.blockList[i].block - memoryAllocation.memory);
 		printf("\t\t\t.block_size = %llu,\n", memoryAllocation.blockList[i].block_size);
 		printf("\t\t\t.allocated = %s,\n", memoryAllocation.blockList[i].allocated ? "true" : "false");
 		printf("\t\t\t.unlinked = %s,\n", memoryAllocation.blockList[i].unlinked ? "true" : "false");
@@ -562,9 +562,8 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 			// Copy block list to new location.
 			tempMemory = memoryAllocation->blockList[newBlock].block;
 			error = dl_memcopy(tempMemory,
-			                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t),
 			                   memoryAllocation->blockList,
-			                       memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
+			                   memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
 			if (error) {
 				goto l_cleanup;
 			}
@@ -691,7 +690,7 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size) {
 	dl_error_t error = dl_error_ok;
 	
-	dl_size_t block = -1;
+	dl_ptrdiff_t block = -1;
 	
 	if (size == 0) {
 		error = dl_error_invalidValue;
@@ -769,6 +768,8 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	dl_ptrdiff_t newBlock = -1;
 	dl_ptrdiff_t tempBlock = -1;
 	
+	void *currentBlock_memory = dl_null;
+	
 	dl_size_t currentSize = 0;
 	
 	dl_bool_t blockFits = dl_false;
@@ -824,8 +825,9 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	
 	if (!blockFits) {
 		// Copy.
-		error = dl_memcopy(memoryAllocation->blockList[newBlock].block, dl_min(size, memoryAllocation->blockList[currentBlock].block_size),
-		                   memoryAllocation->blockList[currentBlock].block, dl_min(size, memoryAllocation->blockList[currentBlock].block_size));
+		error = dl_memcopy(memoryAllocation->blockList[newBlock].block,
+		                   *memory,
+		                   dl_min(size, memoryAllocation->blockList[currentBlock].block_size));
 		if (error) {
 			goto l_cleanup;
 		}
