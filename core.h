@@ -11,12 +11,10 @@ typedef long long dl_ptrdiff_t;
 
 #define dl_null ((void *) 0)
 
-#define dl_max(a,b) ((a > b) ? (a) : (b))
-#define dl_min(a,b) ((a < b) ? (a) : (b))
-
 typedef enum {
 	dl_error_ok = 0,
 	dl_error_invalidValue,
+	dl_error_bufferUnderflow,
 	dl_error_bufferOverflow,
 	dl_error_nullPointer,
 	dl_error_danglingPointer,
@@ -27,6 +25,13 @@ typedef enum {
 
 extern const char *dl_errorString[];
 
-dl_error_t dl_memcopy(void *destination, dl_size_t destination_size, void *source, dl_size_t source_size);
+#define dl_max(a,b) ((a > b) ? (a) : (b))
+#define dl_min(a,b) ((a < b) ? (a) : (b))
+
+dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size);
+void dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size);
+
+void dl_strlen(dl_size_t *length, const char *string);
+#define DL_STR(DL_STR_string) DL_STR_string, (sizeof(DL_STR_string) - 1)
 
 #endif // DUCKLIB_CORE

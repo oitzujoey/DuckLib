@@ -4,6 +4,7 @@
 const char *dl_errorString[] = {
 	"dl_error_ok",
 	"dl_error_invalidValue",
+	"dl_error_bufferUnderflow",
 	"dl_error_bufferOverflow",
 	"dl_error_nullPointer",
 	"dl_error_danglingPointer",
@@ -12,21 +13,19 @@ const char *dl_errorString[] = {
 	"dl_error_cantHappen"
 };
 
-dl_error_t dl_memcopy(void *destination, dl_size_t destination_size, void *source, dl_size_t source_size) {
+dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size) {
 	dl_error_t error = dl_error_ok;
-
-	if (destination_size < source_size) {
-		error = dl_error_bufferOverflow;
-		goto l_cleanup;
-	}
+	const char *s;
 
 	if (destination > source) {
-		for (char *d = destination + source_size - 1, *s = source + source_size - 1; s >= (char *) source; --d, --s) {
+		s = source + size - 1;
+		for (char *d = destination + size - 1; s >= (char *) source; --d, --s) {
 			*d = *s;
 		}
 	}
 	else if (destination < source) {
-		for (char *d = destination, *s = source; s < (char *) source + source_size; d++, s++) {
+		s = source;
+		for (char *d = destination; s < (char *) source + size; d++, s++) {
 			*d = *s;
 		}
 	}
@@ -35,4 +34,21 @@ dl_error_t dl_memcopy(void *destination, dl_size_t destination_size, void *sourc
 	l_cleanup:
 
 	return error;
+}
+
+void dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size) {
+	const char *s;
+
+	s = source;
+	for (char *d = destination; s < (char *) source + size; d++, s++) {
+		*d = *s;
+	}
+}
+
+void dl_strlen(dl_size_t *length, const char *string) {
+	dl_size_t i = 0;
+	while (string[i] != '\0') {
+		i++;
+	}
+	*length = i;
 }
