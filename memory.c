@@ -60,8 +60,8 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 	
 	// First block is the block list.
 	memoryAllocation->firstBlock = 0;
-	// Last block is the block of unallocated memory.
-	memoryAllocation->lastBlock = 1;
+	// // Last block is the block of unallocated memory.
+	// memoryAllocation->lastBlock = 1;
 	
 	
 	memoryAllocation->mostRecentBlock = 0;
@@ -86,7 +86,7 @@ void dl_memory_quit(dl_memoryAllocation_t *memoryAllocation) {
 	memoryAllocation->blockList_length = 0;
 	memoryAllocation->blockList_indexOfBlockList = -1;
 	memoryAllocation->firstBlock = -1;
-	memoryAllocation->lastBlock = -1;
+	// memoryAllocation->lastBlock = -1;
 	memoryAllocation->mostRecentBlock = -1;
 	// memoryAllocation->fit = 
 }
@@ -133,7 +133,7 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 	);
 	printf("\t.mostRecentBlock = %lli,\n", memoryAllocation.mostRecentBlock);
 	printf("\t.firstBlock = %lli,\n", memoryAllocation.firstBlock);
-	printf("\t.lastBlock = %lli,\n", memoryAllocation.lastBlock);
+	// printf("\t.lastBlock = %lli,\n", memoryAllocation.lastBlock);
 	printf("\t.blockList_length = %llu,\n", memoryAllocation.blockList_length);
 	printf("\t.blockList_indexOfBlockList = %lli,\n", memoryAllocation.blockList_indexOfBlockList);
 	printf("\t.blockList_blockList = { /* %X */\n", memoryAllocation.blockList);
@@ -198,12 +198,12 @@ dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation) {
 		goto l_cleanup;
 	}
 	
-	// lastBlock
-	if ((memoryAllocation.lastBlock < -1) || (memoryAllocation.lastBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
-		printf("memoryAllocation.lastBlock is out of range: %lli\n", memoryAllocation.lastBlock);
-		error = dl_error_invalidValue;
-		goto l_cleanup;
-	}
+	// // lastBlock
+	// if ((memoryAllocation.lastBlock < -1) || (memoryAllocation.lastBlock >= (dl_ptrdiff_t) memoryAllocation.blockList_length)) {
+	// 	printf("memoryAllocation.lastBlock is out of range: %lli\n", memoryAllocation.lastBlock);
+	// 	error = dl_error_invalidValue;
+	// 	goto l_cleanup;
+	// }
 	
 	// blockList
 	if (((unsigned char *) memoryAllocation.blockList < (unsigned char *) memoryAllocation.memory)
@@ -257,8 +257,8 @@ dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation) {
 	
 	// block
 	if ((unsigned char *) blockListEntry.block != (unsigned char *) memoryAllocation.blockList) {
-		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].block is not equal to memoryAllocation.blockList_length: %llu\n",
-		    blockListEntry.block);
+		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].block is not equal to memoryAllocation.blockList: %llX %llX\n",
+		    (unsigned char *) blockListEntry.block, (unsigned char *) memoryAllocation.blockList);
 		error = dl_error_invalidValue;
 		goto l_cleanup;
 	}
@@ -427,10 +427,10 @@ void dl_memory_mergeBlockAfter(dl_memoryAllocation_t *memoryAllocation, dl_bool_
 		memoryAllocation->blockList[block].block_size += memoryAllocation->blockList[nextBlock].block_size;
 		// Unlink nextBlock.
 		memoryAllocation->blockList[block].nextBlock = memoryAllocation->blockList[nextBlock].nextBlock;
-		if (memoryAllocation->blockList[block].nextBlock == -1) {
-			memoryAllocation->lastBlock = block;
-		}
-		else {
+		if (memoryAllocation->blockList[block].nextBlock != -1) {
+		// 	memoryAllocation->lastBlock = block;
+		// }
+		// else {
 			memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].previousBlock = block;
 		}
 		// Free nextBlock's entry.
@@ -607,10 +607,10 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 			
 			// Link extra block after block list block.
 			memoryAllocation->blockList[extraBlock].nextBlock = blockListEntry->nextBlock;
-			if (blockListEntry->nextBlock == -1) {
-				memoryAllocation->lastBlock = extraBlock;
-			}
-			else {
+			if (blockListEntry->nextBlock != -1) {
+			// 	memoryAllocation->lastBlock = extraBlock;
+			// }
+			// else {
 				memoryAllocation->blockList[blockListEntry->nextBlock].previousBlock = extraBlock;
 			}
 			memoryAllocation->blockList[extraBlock].previousBlock = memoryAllocation->blockList_indexOfBlockList;
@@ -671,10 +671,7 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 	memoryAllocation->blockList[block].block_size = index;
 	
 	memoryAllocation->blockList[unlinkedBlock].nextBlock = memoryAllocation->blockList[block].nextBlock;
-	if (memoryAllocation->blockList[block].nextBlock == -1) {
-		memoryAllocation->lastBlock = unlinkedBlock;
-	}
-	else {
+	if (memoryAllocation->blockList[block].nextBlock != -1) {
 		memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].previousBlock = unlinkedBlock;
 	}
 	memoryAllocation->blockList[unlinkedBlock].previousBlock = block;

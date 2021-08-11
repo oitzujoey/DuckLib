@@ -28,7 +28,7 @@ typedef enum {
 	dl_memoryFit_worst
 } dl_memoryFit_t;
 
-typedef struct {
+typedef struct dl_memoryAllocation_s {
 	void *memory;
 	dl_size_t size;
 	
@@ -37,8 +37,8 @@ typedef struct {
 	
 	// Firstblock will always equal zero.
 	dl_ptrdiff_t firstBlock;
-	// Lastblock may change a lot.
-	dl_ptrdiff_t lastBlock;
+	// // Lastblock may change a lot.
+	// dl_ptrdiff_t lastBlock;
 	
 	dl_memoryBlock_t *blockList;
 	dl_size_t blockList_length;
