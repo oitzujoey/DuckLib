@@ -1,6 +1,6 @@
 
-#ifndef STRING_H
-#define STRING_H
+#ifndef DUCKLIB_STRING_H
+#define DUCKLIB_STRING_H
 
 #include "core.h"
 
@@ -13,8 +13,9 @@ dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const char *string, const d
 dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_t string_length);
 
 void dl_string_compare(dl_bool_t *result, const char *str1, const dl_size_t str1_length, const char *str2, const dl_size_t str2_length);
+void dl_string_compare_partial(dl_bool_t *result, const char *str1, const char *str2, const dl_size_t length);
 
 #define dl_string_toLower(c) (((c >= 'A') && (c <= 'Z')) ? (c - 'A' + 'a') : c)
 #define dl_string_toUpper(c) (((c >= 'a') && (c <= 'z')) ? (c - 'a' + 'A') : c)
 
-#endif // STRING_H
+#endif // DUCKLIB_STRING_H

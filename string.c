@@ -286,3 +286,13 @@ void dl_string_compare(dl_bool_t *result, const char *str1, const dl_size_t str1
 		}
 	}
 }
+
+void dl_string_compare_partial(dl_bool_t *result, const char *str1, const char *str2, const dl_size_t length) {
+	*result = dl_true;
+	for (dl_ptrdiff_t i = 0; i < length; i++) {
+		if (str1[i] != str2[i]) {
+			*result = dl_false;
+			break;
+		}
+	}
+}
