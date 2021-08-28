@@ -15,8 +15,58 @@ void dl_trie_init(dl_trie_t *trie, dl_memoryAllocation_t *memoryAllocation, dl_p
 	trie->trie.value.nodes_name_lengths = dl_null;
 }
 
+static dl_error_t dl_trie_quit_node(dl_trie_t *trie, dl_trie_node_t *trieNode) {
+	dl_error_t e = dl_error_ok;
+	
+	dl_ptrdiff_t node_index = 0;
+	l_nodeTraverse: {
+		e = dl_free(trie->memoryAllocation, (void **) &trieNode->value.nodes_name[node_index]);
+		if (e) {
+			goto l_cleanup;
+		}
+		e = dl_trie_quit_node(trie, &trieNode->value.nodes[node_index]);
+		if (e) {
+			goto l_cleanup;
+		}
+	} // Fall through.
+	
+	e = dl_free(trie->memoryAllocation, (void **) &trieNode->value.nodes_name_lengths);
+	if (e) {
+		goto l_cleanup;
+	}
+	
+	e = dl_free(trie->memoryAllocation, (void **) &trieNode->value.nodes_name);
+	if (e) {
+		goto l_cleanup;
+	}
+	
+	e = dl_free(trie->memoryAllocation, (void **) &trieNode->value.nodes);
+	if (e) {
+		goto l_cleanup;
+	}
+	
+	trieNode->index = -1;
+	
+	l_cleanup:
+	
+	return e;
+}
+
 dl_error_t dl_trie_quit(dl_trie_t *trie) {
-	return dl_error_ok;
+	dl_error_t e = dl_error_ok;
+	
+	dl_trie_node_t *trieNode = &trie->trie;
+	
+	e = dl_trie_quit_node(trie, &trie->trie);
+	if (e) {
+		goto l_cleanup;
+	}
+	
+	trie->memoryAllocation = dl_null;
+	
+	l_cleanup:
+	
+	return e;
 }
 
 static void dl_trie_print_node(dl_trie_node_t trieNode, dl_size_t indentation) {
