@@ -122,9 +122,7 @@ static dl_error_t dl_trie_pushNode(dl_trie_t *trie, dl_trie_node_t *trieNode, co
 dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_length, const dl_ptrdiff_t index) {
 	dl_error_t e = dl_error_ok;
 	
-	
 	dl_trie_node_t *trieNode = &trie->trie;
-	dl_bool_t equal = dl_false;
 	dl_ptrdiff_t offset = 0;
 	dl_trie_node_t tempNode;
 	
@@ -216,8 +214,6 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 					}
 					trieNode->value.nodes_name_lengths[node_index] = name_index;
 					
-					// Set index.
-					
 					goto l_cleanup;
 				}
 				else {
@@ -241,45 +237,59 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 	return e;
 }
 
-void dl_trie_find(dl_trie_t *trie, dl_ptrdiff_t *index, const char *key, const dl_size_t key_length) {
+void dl_trie_find(const dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl_size_t key_length) {
 	
-	dl_trie_node_t *trieNode = &trie->trie;
-	dl_bool_t equal = dl_false;
+	dl_trie_node_t *trieNode = &trie.trie;
 	dl_ptrdiff_t offset = 0;
 	
-	*index = -1;
+	dl_ptrdiff_t node_index = 0;
+	dl_size_t name_index = 0;
 	
-	for (dl_ptrdiff_t node_index = 0; node_index < trieNode->value.nodes_length; node_index++) {
-		
+	// I wonder how bad it would be if I made a while loop out of gotos? Let's try it.
+	l_nodeTraverse: {
 		// Did we find the leaf node?
 		if (offset == key_length) {
-			// Yes.
+			// Yes. Reassign the index.
 			*index = trieNode->index;
-			break;
+			return;
 		}
 		
-		if (trieNode->value.nodes_name[node_index] == dl_null) {
-			// Nothing here. Complete and utter failure.
-			break;
+		if (node_index >= trieNode->value.nodes_length) {
+			*index = -1;
+			return;
 		}
 		
-		if (trieNode->value.nodes_name_lengths[node_index] > key_length - offset) {
-			// Desired node doesn't exist.
-			break;
-		}
+		name_index = 0;
+		l_nameTraverse: {
+			if (offset + name_index > key_length) {
+				*index = -1;
+				return;
+			}
+			else if (name_index >= trieNode->value.nodes_name_lengths[node_index]) {
+				// Ran out of characters. All characters were correct. Goto to this child node.
+				offset += trieNode->value.nodes_name_lengths[node_index];
+				trieNode = &trieNode->value.nodes[node_index];
+				node_index = 0;
+				goto l_nodeTraverse;
+			}
+			else if (key[offset + name_index] != trieNode->value.nodes_name[node_index][name_index]) {
+				if (name_index != 0) {
+					*index = -1;
+					return;
+				}
+				else {
+					node_index++;
+					goto l_nodeTraverse;
+				}
+			}
+			else {
+				name_index++;
+				goto l_nameTraverse;
+			}
+		} // Fall through.
 		
-		/**/ dl_string_compare_partial(&equal, trieNode->value.nodes_name[node_index], key + offset, trieNode->value.nodes_name_lengths[node_index]);
-		if (equal) {
-			// Found the correct branch.
-			
-			// Cut everything we've traversed from the beginning of the key.
-			offset += trieNode->value.nodes_name_lengths[node_index];
-			
-			// Go to the next node.
-			trieNode = &trieNode->value.nodes[node_index];
-			
-			// Reset node count.
-			node_index = 0;
-		}
-	}
+		node_index++;
+		goto l_nodeTraverse;
+	} // Fall through.
+	// OK. `goto`s weren't ideal, though they did allow me to do some interesting things.
 }
