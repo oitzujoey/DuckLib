@@ -45,6 +45,12 @@ void dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size)
 	}
 }
 
+void dl_memclear(void *destination, dl_size_t size) {
+	for (dl_ptrdiff_t i = 0; i < size; i++) {
+		((unsigned char *) destination)[i] = 0;
+	}
+}
+
 void dl_strlen(dl_size_t *length, const char *string) {
 	dl_size_t i = 0;
 	while (string[i] != '\0') {

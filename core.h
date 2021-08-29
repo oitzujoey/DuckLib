@@ -31,6 +31,8 @@ extern const char *dl_errorString[];
 dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size);
 void dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size);
 
+void dl_memclear(void *destination, dl_size_t size);
+
 void dl_strlen(dl_size_t *length, const char *string);
 #define DL_STR(DL_STR_string) DL_STR_string, (sizeof(DL_STR_string) - 1)
 
