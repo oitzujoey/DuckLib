@@ -1,7 +1,7 @@
 
 #include "array.h"
 
-void array_init(array_t *array, dl_memoryAllocation_t *memoryAllocation, dl_size_t element_size, array_strategy_t strategy) {
+void dl_array_init(dl_array_t *array, dl_memoryAllocation_t *memoryAllocation, dl_size_t element_size, dl_array_strategy_t strategy) {
 	array->memoryAllocation = memoryAllocation;
 	array->element_size = element_size;
 	array->elements_length = 0;
@@ -10,7 +10,7 @@ void array_init(array_t *array, dl_memoryAllocation_t *memoryAllocation, dl_size
 	array->strategy = strategy;
 }
 
-dl_error_t array_quit(array_t *array) {
+dl_error_t dl_array_quit(dl_array_t *array) {
 	dl_error_t e = dl_error_ok;
 	
 	if (array->elements != dl_null) {
@@ -30,7 +30,7 @@ dl_error_t array_quit(array_t *array) {
 	return e;
 }
 
-dl_error_t array_pushElement(array_t *array, void *element) {
+dl_error_t dl_array_pushElement(dl_array_t *array, void *element) {
 	dl_error_t e = dl_error_ok;
 	
 	// Add space for a new element.
@@ -69,7 +69,7 @@ dl_error_t array_pushElement(array_t *array, void *element) {
 	return e;
 }
 
-dl_error_t array_pushElements(array_t *array, void *elements, dl_size_t elements_length) {
+dl_error_t dl_array_pushElements(dl_array_t *array, void *elements, dl_size_t elements_length) {
 	dl_error_t e = dl_error_ok;
 	
 	// Add space for new elements.
@@ -108,7 +108,7 @@ dl_error_t array_pushElements(array_t *array, void *elements, dl_size_t elements
 	return e;
 }
 
-// dl_error_t array_popElement(array_t *array, void **element, dl_ptrdiff_t index) {
+// dl_error_t dl_array_popElement(dl_array_t *array, void **element, dl_ptrdiff_t index) {
 // 	dl_error_t e = dl_error_ok;
 	
 // 	*element = (unsigned char *) array->elements + index;
@@ -118,7 +118,7 @@ dl_error_t array_pushElements(array_t *array, void *elements, dl_size_t elements
 // 	return e;
 // }
 
-dl_error_t array_popElement(array_t *array, void *element) {
+dl_error_t dl_array_popElement(dl_array_t *array, void *element) {
 	dl_error_t e = dl_error_ok;
 	
 	if (array->elements_length > 0) {
@@ -141,7 +141,11 @@ dl_error_t array_popElement(array_t *array, void *element) {
 	return e;
 }
 
-dl_error_t array_getTop(array_t *array, void *element) {
+/*
+Fetches element on the top of the stack.
+Returns bufferUnderflow if the stack is empty.
+*/
+dl_error_t dl_array_getTop(dl_array_t *array, void *element) {
 	dl_error_t e = dl_error_ok;
 	
 	if (array->elements_length > 0) {
@@ -160,7 +164,7 @@ dl_error_t array_getTop(array_t *array, void *element) {
 	return e;
 }
 
-// dl_error_t array_popElements(array_t *array, void *element, dl_size_t number) {
+// dl_error_t dl_array_popElements(dl_array_t *array, void *element, dl_size_t number) {
 // 	dl_error_t e = dl_error_ok;
 	
 // 	for (dl_size_t i = 0; i < number; i++) {
@@ -183,7 +187,7 @@ dl_error_t array_getTop(array_t *array, void *element) {
 // 	return e;
 // }
 
-dl_error_t array_get(array_t *array, void *element, dl_ptrdiff_t index) {
+dl_error_t dl_array_get(dl_array_t *array, void *element, dl_ptrdiff_t index) {
 	dl_error_t e = dl_error_ok;
 	
 	if ((index > 0) && (index < array->elements_length)) {
@@ -202,10 +206,10 @@ dl_error_t array_get(array_t *array, void *element, dl_ptrdiff_t index) {
 	return e;
 }
 
-dl_error_t array_set(array_t *array, const void *element, dl_ptrdiff_t index) {
+dl_error_t dl_array_set(dl_array_t *array, const void *element, dl_ptrdiff_t index) {
 	dl_error_t e = dl_error_ok;
 	
-	if ((index > 0) && (index < array->elements_length)) {
+	if ((index >= 0) && (index < array->elements_length)) {
 		e = dl_memcopy(array->elements + index * array->element_size, element, array->element_size);
 		if (e) {
 			goto l_cleanup;
@@ -224,7 +228,7 @@ dl_error_t array_set(array_t *array, const void *element, dl_ptrdiff_t index) {
 /*
 Keeps arrayDestination's allocator the same. After all, it's easy enough to copy the allocator yourself if needed.
 */
-dl_error_t array_copy(array_t *arrayDestination, array_t arraySource) {
+dl_error_t dl_array_copy(dl_array_t *arrayDestination, dl_array_t arraySource) {
 	dl_error_t e = dl_error_ok;
 	
 	e = dl_free(arrayDestination->memoryAllocation, &arrayDestination->elements);
@@ -255,7 +259,7 @@ dl_error_t array_copy(array_t *arrayDestination, array_t arraySource) {
 }
 
 // Just `array_push` but for arrays.
-dl_error_t array_append(array_t *arrayDestination, array_t *arraySource) {
+dl_error_t dl_array_append(dl_array_t *arrayDestination, dl_array_t *arraySource) {
 	dl_error_t e = dl_error_ok;
 
 	// Add space for new elements.
