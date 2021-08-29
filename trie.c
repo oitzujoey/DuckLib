@@ -287,7 +287,7 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 	return e;
 }
 
-void dl_trie_find(const dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl_size_t key_length) {
+void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl_size_t key_length) {
 	
 	dl_trie_node_t *trieNode = &trie.trie;
 	dl_ptrdiff_t offset = 0;

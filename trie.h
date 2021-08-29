@@ -27,6 +27,6 @@ void dl_trie_print(dl_trie_t trie);
 void dl_trie_print_compact(dl_trie_t trie);
 
 dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_length, const dl_ptrdiff_t index);
-void dl_trie_find(const dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl_size_t key_length);
+void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl_size_t key_length);
 
 #endif /* DUCKLIB_TRIE_H */
