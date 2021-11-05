@@ -9,6 +9,12 @@ typedef unsigned char dl_bool_t;
 typedef unsigned long long dl_size_t;
 typedef long long dl_ptrdiff_t;
 
+typedef unsigned char dl_uint8_t;
+typedef unsigned short dl_uint16_t;
+
+#define DL_UINT8_MAX    255U
+#define DL_UINT16_MAX   65535U
+
 #define dl_null ((void *) 0)
 
 typedef enum {

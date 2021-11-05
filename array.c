@@ -72,6 +72,10 @@ dl_error_t dl_array_pushElement(dl_array_t *array, void *element) {
 dl_error_t dl_array_pushElements(dl_array_t *array, void *elements, dl_size_t elements_length) {
 	dl_error_t e = dl_error_ok;
 	
+	if (elements_length == 0) {
+		goto l_cleanup;
+	}
+	
 	// Add space for new elements.
 	switch (array->strategy) {
 	case array_strategy_fit:
