@@ -68,6 +68,10 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 	memoryAllocation->fit = fit;
 	
 	
+	memoryAllocation->used = memoryAllocation->blockList[0].block_size;
+	memoryAllocation->max_used = memoryAllocation->used;
+	
+	
 	error = dl_error_ok;
 	l_cleanup:
 	
@@ -534,6 +538,11 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 		
 		memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].allocated = dl_false;
 		
+		if (memoryAllocation->blockList[memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].nextBlock].nextBlock == -1) {
+			memoryAllocation->used = (char *) memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block - (char *) memoryAllocation->memory;
+		}
+		
+		
 		/* No error */ dl_memory_mergeBlockAfter(memoryAllocation, &merged, memoryAllocation->blockList_indexOfBlockList);
 		
 		if (memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block_size
@@ -623,6 +632,9 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 		}
 		
 		memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].allocated = dl_true;
+		
+		memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block_size + (char *) memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block - (char *) memoryAllocation->memory);
+		memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
 	}
 	
 	error = dl_error_ok;
@@ -719,6 +731,11 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 	// Pass the memory.
 	*memory = memoryAllocation->blockList[block].block;
 	
+	
+	memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[block].block_size + (char *) memoryAllocation->blockList[block].block - (char *) memoryAllocation->memory);
+	memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
+
+	
 	error = dl_error_ok;
 	l_cleanup:
 	
@@ -747,8 +764,12 @@ dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory) {
 	}
 	
 	memoryAllocation->blockList[block].allocated = dl_false;
-	
+
 	/* No error */ dl_memory_mergeBlocks(memoryAllocation, dl_null, block);
+	
+	if (memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].nextBlock == -1) {
+		memoryAllocation->used = (char *) memoryAllocation->blockList[block].block - (char *) memoryAllocation->memory;
+	}
 	
 	error = dl_error_ok;
 	l_cleanup:
@@ -798,12 +819,20 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 		/* No error */ dl_memory_mergeBlockBefore(memoryAllocation, dl_null, currentBlock);
 	}
 	
+	
+	if (memoryAllocation->blockList[memoryAllocation->blockList[currentBlock].nextBlock].nextBlock == -1) {
+		memoryAllocation->used = (char *) memoryAllocation->blockList[currentBlock].block - (char *) memoryAllocation->memory;
+	}
+	
+	
+	
 	memoryAllocation->blockList[currentBlock].allocated = dl_true;
 	error = dl_memory_reserveTableEntries(memoryAllocation, 1);
 	if (error) {
 		goto l_cleanup;
 	}
 	memoryAllocation->blockList[currentBlock].allocated = dl_false;
+	
 	
 	newBlock = currentBlock;
 	if (!blockFits) {
@@ -835,6 +864,9 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	
 	// Pass the memory.
 	*memory = memoryAllocation->blockList[newBlock].block;
+	
+	memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[newBlock].block_size + (char *) memoryAllocation->blockList[newBlock].block - (char *) memoryAllocation->memory);
+	memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
 	
 	error = dl_error_ok;
 	l_cleanup:

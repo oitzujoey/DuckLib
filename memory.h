@@ -43,6 +43,8 @@ typedef struct dl_memoryAllocation_s {
 	dl_memoryBlock_t *blockList;
 	dl_size_t blockList_length;
 	dl_ptrdiff_t blockList_indexOfBlockList;
+	dl_size_t max_used;
+	dl_size_t used;
 } dl_memoryAllocation_t;
 
 dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory, dl_size_t size, dl_memoryFit_t fit);
