@@ -5,8 +5,8 @@
 #include "memory.h"
 
 typedef enum {
-	array_strategy_fit,
-	array_strategy_double
+	dl_array_strategy_fit,
+	dl_array_strategy_double
 } dl_array_strategy_t;
 
 typedef struct {

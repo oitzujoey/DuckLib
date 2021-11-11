@@ -35,14 +35,14 @@ dl_error_t dl_array_pushElement(dl_array_t *array, void *element) {
 	
 	// Add space for a new element.
 	switch (array->strategy) {
-	case array_strategy_fit:
+	case dl_array_strategy_fit:
 		e = dl_realloc(array->memoryAllocation, &array->elements, (array->elements_length + 1) * array->element_size);
 		if (e) {
 			goto l_cleanup;
 		}
 		array->elements_memorySize = (array->elements_length + 1) * array->element_size;
 		break;
-	case array_strategy_double:
+	case dl_array_strategy_double:
 		while ((array->elements_length + 1) * array->element_size > array->elements_memorySize) {
 			e = dl_realloc(array->memoryAllocation, &array->elements, 2 * (array->elements_length + 1) * array->element_size);
 			if (e) {
@@ -56,10 +56,15 @@ dl_error_t dl_array_pushElement(dl_array_t *array, void *element) {
 		goto l_cleanup;
 	}
 	
-	// Copy given element into array.
-	e = dl_memcopy(&((unsigned char *) array->elements)[array->element_size * array->elements_length], element, array->element_size);
-	if (e) {
-		goto l_cleanup;
+	if (element == dl_null) {
+		// Create an empty element.
+		/**/ dl_memclear(&((unsigned char *) array->elements)[array->element_size * array->elements_length], array->element_size);
+	} else {
+		// Copy given element into array.
+		e = dl_memcopy(&((unsigned char *) array->elements)[array->element_size * array->elements_length], element, array->element_size);
+		if (e) {
+			goto l_cleanup;
+		}
 	}
 	
 	array->elements_length++;
@@ -78,14 +83,14 @@ dl_error_t dl_array_pushElements(dl_array_t *array, void *elements, dl_size_t el
 	
 	// Add space for new elements.
 	switch (array->strategy) {
-	case array_strategy_fit:
+	case dl_array_strategy_fit:
 		e = dl_realloc(array->memoryAllocation, &array->elements, (array->elements_length + elements_length) * array->element_size);
 		if (e) {
 			goto l_cleanup;
 		}
 		array->elements_memorySize = (array->elements_length + elements_length) * array->element_size;
 		break;
-	case array_strategy_double:
+	case dl_array_strategy_double:
 		while ((array->elements_length + elements_length) * array->element_size > array->elements_memorySize) {
 			e = dl_realloc(array->memoryAllocation, &array->elements, 2 * (array->elements_length + elements_length) * array->element_size);
 			if (e) {
@@ -268,14 +273,14 @@ dl_error_t dl_array_append(dl_array_t *arrayDestination, dl_array_t *arraySource
 
 	// Add space for new elements.
 	switch (arrayDestination->strategy) {
-	case array_strategy_fit:
+	case dl_array_strategy_fit:
 		e = dl_realloc(arrayDestination->memoryAllocation, &arrayDestination->elements, (arrayDestination->elements_length + arraySource->elements_length) * arrayDestination->element_size);
 		if (e) {
 			goto l_cleanup;
 		}
 		arrayDestination->elements_memorySize = (arrayDestination->elements_length + arraySource->elements_length) * arrayDestination->element_size;
 		break;
-	case array_strategy_double:
+	case dl_array_strategy_double:
 		while ((arrayDestination->elements_length + arraySource->elements_length) * arrayDestination->element_size > arrayDestination->elements_memorySize) {
 			e = dl_realloc(arrayDestination->memoryAllocation, &arrayDestination->elements, 2 * (arrayDestination->elements_length + arraySource->elements_length) * arrayDestination->element_size);
 			if (e) {
