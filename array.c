@@ -307,3 +307,18 @@ dl_error_t dl_array_append(dl_array_t *arrayDestination, dl_array_t *arraySource
 
 	return e;
 }
+
+dl_error_t dl_array_clear(dl_array_t *array) {
+	dl_error_t e = dl_error_ok;
+	
+	array->elements_length = 0;
+	array->elements_memorySize = 0;
+	e = dl_free(array->memoryAllocation, (void **) &array->elements);
+	if (e) {
+		goto l_cleanup;
+	}
+	
+	l_cleanup:
+	
+	return e;
+}

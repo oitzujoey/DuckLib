@@ -27,5 +27,9 @@ dl_error_t dl_array_popElement(dl_array_t *array, void *element);
 dl_error_t dl_array_getTop(dl_array_t *array, void *element);
 dl_error_t dl_array_get(dl_array_t *array, void *element, dl_ptrdiff_t index);
 dl_error_t dl_array_set(dl_array_t *array, const void *element, dl_ptrdiff_t index);
+dl_error_t dl_array_clear(dl_array_t *array);
+
+#define DL_ARRAY_GETTOPADDRESS(array, type) ((type*) (array).elements)[(array).elements_length - 1]
+#define DL_ARRAY_GETADDRESS(array, type, index) ((type*) (array).elements)[index]
 
 #endif // DUCKLIB_ARRAY_H
