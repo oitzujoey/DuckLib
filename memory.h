@@ -3,7 +3,7 @@
 #define DUCKLIB_MEMORY_H
 
 #include "core.h"
-
+#include <stdlib.h>
 // typedef struct {
 // 	void *elements;
 // 	dl_size_t element_size;
@@ -52,8 +52,14 @@ void dl_memory_quit(dl_memoryAllocation_t *memoryAllocation);
 void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation);
 dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation);
 
+#if 0
 dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory);
 dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
+#else
+#define dl_malloc(memoryAllocation, memory, size) 0;*memory = malloc(size);
+#define dl_free(memoryAllocation, memory) 0;free(*memory);
+#define dl_realloc(memoryAllocation, memory, size) 0;*memory = realloc(*memory, size);
+#endif
 
 #endif // DUCKLIB_MEMORY_H

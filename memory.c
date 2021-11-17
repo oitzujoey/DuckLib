@@ -2,6 +2,9 @@
 #include "memory.h"
 #include <stdio.h>
 #include <string.h>
+#ifdef MEMCHECK
+#include <valgrind/memcheck.h>
+#endif
 
 
 dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory, dl_size_t size, dl_memoryFit_t fit) {
@@ -696,6 +699,7 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 	return error;
 }
 
+#if 0
 dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size) {
 	dl_error_t error = dl_error_ok;
 	
@@ -745,6 +749,7 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 	
 	return error;
 }
+
 
 // Sets the given pointer to zero after freeing the memory.
 dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory) {
@@ -877,3 +882,4 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	
 	return error;
 }
+#endif
