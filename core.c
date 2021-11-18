@@ -18,8 +18,8 @@ dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size) {
 	const char *s;
 
 	if (destination > source) {
-		s = source + size - 1;
-		for (char *d = destination + size - 1; s >= (char *) source; --d, --s) {
+		s = (char*)source + size - 1;
+		for (char *d = (char*)destination + size - 1; s >= (char *) source; --d, --s) {
 			*d = *s;
 		}
 	}

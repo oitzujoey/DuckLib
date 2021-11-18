@@ -132,7 +132,7 @@ dl_error_t dl_array_popElement(dl_array_t *array, void *element) {
 	
 	if (array->elements_length > 0) {
 		if (element != dl_null) {
-			e = dl_memcopy(element, array->elements + (array->elements_length - 1) * array->element_size, array->element_size);
+			e = dl_memcopy(element, (char*)array->elements + (array->elements_length - 1) * array->element_size, array->element_size);
 			if (e) {
 				goto l_cleanup;
 			}
@@ -158,7 +158,7 @@ dl_error_t dl_array_getTop(dl_array_t *array, void *element) {
 	dl_error_t e = dl_error_ok;
 	
 	if (array->elements_length > 0) {
-		e = dl_memcopy(element, array->elements + (array->elements_length - 1) * array->element_size, array->element_size);
+		e = dl_memcopy(element, (char*)array->elements + (array->elements_length - 1) * array->element_size, array->element_size);
 		if (e) {
 			goto l_cleanup;
 		}
@@ -200,7 +200,7 @@ dl_error_t dl_array_get(dl_array_t *array, void *element, dl_ptrdiff_t index) {
 	dl_error_t e = dl_error_ok;
 	
 	if ((index >= 0) && (index < array->elements_length)) {
-		e = dl_memcopy(element, array->elements + index * array->element_size, array->element_size);
+		e = dl_memcopy(element, (char*)array->elements + index * array->element_size, array->element_size);
 		if (e) {
 			goto l_cleanup;
 		}
@@ -219,7 +219,7 @@ dl_error_t dl_array_set(dl_array_t *array, const void *element, dl_ptrdiff_t ind
 	dl_error_t e = dl_error_ok;
 	
 	if ((index >= 0) && (index < array->elements_length)) {
-		e = dl_memcopy(array->elements + index * array->element_size, element, array->element_size);
+		e = dl_memcopy( (char*)array->elements + index * array->element_size, element, array->element_size);
 		if (e) {
 			goto l_cleanup;
 		}
