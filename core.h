@@ -2,6 +2,16 @@
 #ifndef DUCKLIB_CORE_H
 #define DUCKLIB_CORE_H
 
+#if defined(_WIN32)
+#  if defined(EXPORTING_DUCKLIB)
+#    define DECLSPEC __declspec(dllexport)
+#  else
+#    define DECLSPEC __declspec(dllimport)
+#  endif
+#else // non windows
+#  define DECLSPEC
+#endif
+
 typedef unsigned char dl_bool_t;
 #define dl_false ((dl_bool_t) 0)
 #define dl_true ((dl_bool_t) 1)
@@ -34,14 +44,14 @@ extern const char *dl_errorString[];
 #define dl_max(a,b) ((a > b) ? (a) : (b))
 #define dl_min(a,b) ((a < b) ? (a) : (b))
 
-dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size);
-void dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size);
+dl_error_t DECLSPEC dl_memcopy(void *destination, const void *source, dl_size_t size);
+void DECLSPEC dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size);
 
-void dl_memclear(void *destination, dl_size_t size);
+void DECLSPEC dl_memclear(void *destination, dl_size_t size);
 
-void dl_strlen(dl_size_t *length, const char *string);
+void DECLSPEC dl_strlen(dl_size_t *length, const char *string);
 #define DL_STR(DL_STR_string) DL_STR_string, (sizeof(DL_STR_string) - 1)
 
-char dl_nybbleToHexChar(unsigned char i);
+char DECLSPEC dl_nybbleToHexChar(unsigned char i);
 
 #endif // DUCKLIB_CORE
