@@ -42,4 +42,6 @@ void dl_memclear(void *destination, dl_size_t size);
 void dl_strlen(dl_size_t *length, const char *string);
 #define DL_STR(DL_STR_string) DL_STR_string, (sizeof(DL_STR_string) - 1)
 
+char dl_nybbleToHexChar(unsigned char i);
+
 #endif // DUCKLIB_CORE

@@ -58,3 +58,13 @@ void dl_strlen(dl_size_t *length, const char *string) {
 	}
 	*length = i;
 }
+
+char dl_nybbleToHexChar(unsigned char i) {
+	i &= 0xFU;
+	if (i < 10) {
+		return i + '0';
+	}
+	else {
+		return i - 10 + 'A';
+	}
+}
