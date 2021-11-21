@@ -77,6 +77,8 @@ dl_error_t dl_array_pushElement(dl_array_t *array, void *element) {
 dl_error_t dl_array_pushElements(dl_array_t *array, void *elements, dl_size_t elements_length) {
 	dl_error_t e = dl_error_ok;
 	
+	dl_bool_t wasNull = (elements == dl_null);
+	
 	if (elements_length == 0) {
 		goto l_cleanup;
 	}
@@ -104,10 +106,17 @@ dl_error_t dl_array_pushElements(dl_array_t *array, void *elements, dl_size_t el
 		goto l_cleanup;
 	}
 	
-	// Copy given element into array.
-	e = dl_memcopy(&((unsigned char *) array->elements)[array->element_size * array->elements_length], elements, elements_length * array->element_size);
-	if (e) {
-		goto l_cleanup;
+	if (wasNull) {
+		/**/ dl_memclear(&((unsigned char *) array->elements)[array->element_size * array->elements_length],
+		                 elements_length * array->element_size);
+	}
+	else {
+		// Copy given element into array.
+		e = dl_memcopy(&((unsigned char *) array->elements)[array->element_size * array->elements_length], elements,
+		               elements_length * array->element_size);
+		if (e) {
+			goto l_cleanup;
+		}
 	}
 	
 	array->elements_length += elements_length;
@@ -310,6 +319,10 @@ dl_error_t dl_array_append(dl_array_t *arrayDestination, dl_array_t *arraySource
 
 dl_error_t dl_array_clear(dl_array_t *array) {
 	dl_error_t e = dl_error_ok;
+	
+	if (array->elements_length == 0) {
+		return e;
+	}
 	
 	array->elements_length = 0;
 	array->elements_memorySize = 0;
