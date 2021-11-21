@@ -163,7 +163,7 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 			}
 		}
 		printf("\t\t(dl_memoryBlock_t) { /* %llu */\n", i);
-		printf("\t\t\t.block = %X, /* offset = %llu */\n", memoryAllocation.blockList[i].block, (char*)memoryAllocation.blockList[i].block - memoryAllocation.memory);
+		printf("\t\t\t.block = %X, /* offset = %llu */\n", memoryAllocation.blockList[i].block, (char *) memoryAllocation.blockList[i].block - (char *) memoryAllocation.memory);
 		printf("\t\t\t.block_size = %llu,\n", memoryAllocation.blockList[i].block_size);
 		printf("\t\t\t.allocated = %s,\n", memoryAllocation.blockList[i].allocated ? "true" : "false");
 		printf("\t\t\t.unlinked = %s,\n", memoryAllocation.blockList[i].unlinked ? "true" : "false");
