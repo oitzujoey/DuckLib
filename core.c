@@ -31,7 +31,7 @@ dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size) {
 	}
 
 	error = dl_error_ok;
-	l_cleanup:
+//	l_cleanup:
 
 	return error;
 }
@@ -46,7 +46,7 @@ void dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size)
 }
 
 void dl_memclear(void *destination, dl_size_t size) {
-	for (dl_ptrdiff_t i = 0; i < size; i++) {
+	for (dl_ptrdiff_t i = 0; (dl_size_t) i < size; i++) {
 		((unsigned char *) destination)[i] = 0;
 	}
 }

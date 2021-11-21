@@ -47,7 +47,7 @@ dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const char *string, const d
 	
 	*result = 0;
 	
-	if (index >= string_length) {
+	if ((dl_size_t) index >= string_length) {
 		e = dl_error_invalidValue;
 		goto l_cleanup;
 	}
@@ -55,7 +55,7 @@ dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const char *string, const d
 	if (string[index] == '-') {
 		index++;
 		
-		if (index >= string_length) {
+		if ((dl_size_t) index >= string_length) {
 			e = dl_error_invalidValue;
 			goto l_cleanup;
 		}
@@ -69,7 +69,7 @@ dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const char *string, const d
 		goto l_cleanup;
 	}
 	
-	while (index < string_length) {
+	while ((dl_size_t) index < string_length) {
 		/* No error */ dl_string_isDigit(&tempBool, string[index]);
 		if (!tempBool) {
 			e = dl_error_invalidValue;
@@ -104,7 +104,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 	if (string[index] == '-') {
 		index++;
 		
-		if (index >= string_length) {
+		if ((dl_size_t) index >= string_length) {
 			e = dl_error_invalidValue;
 			goto l_cleanup;
 		}
@@ -116,7 +116,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 	if (string[index] == '.') {
 		index++;
 		
-		if (index >= string_length) {
+		if ((dl_size_t) index >= string_length) {
 			e = dl_error_invalidValue;
 			goto l_cleanup;
 		}
@@ -133,7 +133,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 		
 		index++;
 		
-		while ((index < string_length) && (dl_string_toLower(string[index]) != 'e')) {
+		while (((dl_size_t) index < string_length) && (dl_string_toLower((unsigned char) string[index]) != 'e')) {
 			
 			power++;
 			
@@ -160,7 +160,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 		
 		index++;
 		
-		while ((index < string_length) && (dl_string_toLower(string[index]) != 'e') && (string[index] != '.')) {
+		while (((dl_size_t) index < string_length) && (dl_string_toLower(string[index]) != 'e') && (string[index] != '.')) {
 			
 			/* No error */ dl_string_isDigit(&tempBool, string[index]);
 			if (!tempBool) {
@@ -176,7 +176,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 		if (string[index] == '.') {
 			index++;
 			
-			if (index >= string_length) {
+			if ((dl_size_t) index >= string_length) {
 				// eError = duckLisp_error_push(duckLisp, DL_STR("Expected a digit after decimal point."), index);
 				// e = eError ? eError : dl_error_bufferOverflow;
 				// This is expected. 1. 234.e61  435. for example.
@@ -186,7 +186,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 			power = 1;
 		}
 		
-		while ((index < string_length) && (dl_string_toLower(string[index]) != 'e')) {
+		while (((dl_size_t) index < string_length) && (dl_string_toLower(string[index]) != 'e')) {
 			
 			/* No error */ dl_string_isDigit(&tempBool, string[index]);
 			if (!tempBool) {
@@ -204,7 +204,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 	if (dl_string_toLower(string[index]) == 'e') {
 		index++;
 		
-		if (index >= string_length) {
+		if ((dl_size_t) index >= string_length) {
 			e = dl_error_invalidValue;
 			goto l_cleanup;
 		}
@@ -212,7 +212,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 		if (string[index] == '-') {
 			index++;
 			
-			if (index >= string_length) {
+			if ((dl_size_t) index >= string_length) {
 				e = dl_error_invalidValue;
 				goto l_cleanup;
 			}
@@ -230,7 +230,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 		
 		index++;
 		
-		while (index < string_length) {
+		while ((dl_size_t) index < string_length) {
 			/* No error */ dl_string_isDigit(&tempBool, string[index]);
 			if (!tempBool) {
 				e = dl_error_invalidValue;
@@ -248,12 +248,12 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 				goto l_cleanup;
 			}
 			
-			for (dl_size_t i = 0; i < power; i++) {
+			for (dl_ptrdiff_t i = 0; i < power; i++) {
 				*result /= 10.0;
 			}
 		}
 		else {
-			for (dl_size_t i = 0; i < power; i++) {
+			for (dl_ptrdiff_t i = 0; i < power; i++) {
 				*result *= 10.0;
 			}
 		}
@@ -279,7 +279,7 @@ void dl_string_compare(dl_bool_t *result, const char *str1, const dl_size_t str1
 	if (str1_length != str2_length) {
 		*result = dl_false;
 	}
-	else for (dl_ptrdiff_t i = 0; i < str1_length; i++) {
+	else for (dl_ptrdiff_t i = 0; (dl_size_t) i < str1_length; i++) {
 		if (str1[i] != str2[i]) {
 			*result = dl_false;
 			break;
@@ -289,7 +289,7 @@ void dl_string_compare(dl_bool_t *result, const char *str1, const dl_size_t str1
 
 void dl_string_compare_partial(dl_bool_t *result, const char *str1, const char *str2, const dl_size_t length) {
 	*result = dl_true;
-	for (dl_ptrdiff_t i = 0; i < length; i++) {
+	for (dl_ptrdiff_t i = 0; (dl_size_t) i < length; i++) {
 		if (str1[i] != str2[i]) {
 			*result = dl_false;
 			break;

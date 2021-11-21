@@ -4,11 +4,16 @@
 
 #include "core.h"
 #include <stdlib.h>
-// typedef struct {
-// 	void *elements;
-// 	dl_size_t element_size;
-// 	dl_size_t elements_length;
-// } dl_array_t;
+
+#if defined(_WIN32)
+#  if defined(EXPORTING_DUCKLIB)
+#    define DECLSPEC __declspec(dllexport)
+#  else
+#    define DECLSPEC __declspec(dllimport)
+#  endif
+#else // non windows
+#  define DECLSPEC
+#endif
 
 typedef struct {
 	void *block;

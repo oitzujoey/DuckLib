@@ -340,7 +340,7 @@ dl_error_t dl_memory_pointerToBlock(dl_memoryAllocation_t memoryAllocation, dl_p
 	dl_error_t error = dl_error_ok;
 	
 	*block = -1;
-	for (dl_ptrdiff_t i = 0; i < memoryAllocation.blockList_length; i++) {
+	for (dl_ptrdiff_t i = 0; (dl_size_t) i < memoryAllocation.blockList_length; i++) {
 		if (!memoryAllocation.blockList[i].unlinked && (memoryAllocation.blockList[i].block == *memory)) {
 			*block = i;
 		}
@@ -528,7 +528,7 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 	dl_memoryBlock_t *blockListEntry = dl_null;
 	
 	// Use unlinked descriptors if possible.
-	for (dl_ptrdiff_t i = 0; i < memoryAllocation->blockList_length; i++) {
+	for (dl_ptrdiff_t i = 0; (dl_size_t) i < memoryAllocation->blockList_length; i++) {
 		if (memoryAllocation->blockList[i].unlinked) {
 			unlinkedBlock_number++;
 		}
@@ -668,7 +668,7 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 	Find an unlinked descriptor for the new block. This should have been
 	allocated beforehand, hence the error.
 	*/
-	for (dl_ptrdiff_t i = 0; i < memoryAllocation->blockList_length; i++) {
+	for (dl_ptrdiff_t i = 0; (dl_size_t) i < memoryAllocation->blockList_length; i++) {
 		if (memoryAllocation->blockList[i].unlinked) {
 			unlinkedBlock = i;
 			break;

@@ -4,6 +4,16 @@
 
 #include "core.h"
 
+#if defined(_WIN32)
+#  if defined(EXPORTING_DUCKLIB)
+#    define DECLSPEC __declspec(dllexport)
+#  else
+#    define DECLSPEC __declspec(dllimport)
+#  endif
+#else // non windows
+#  define DECLSPEC
+#endif
+
 void DECLSPEC dl_string_isDigit(dl_bool_t *result, const char character);
 void DECLSPEC dl_string_isAlpha(dl_bool_t *result, const char character);
 void DECLSPEC dl_string_isSpace(dl_bool_t *result, const char character);

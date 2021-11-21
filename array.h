@@ -4,6 +4,16 @@
 #include "core.h"
 #include "memory.h"
 
+#if defined(_WIN32)
+#  if defined(EXPORTING_DUCKLIB)
+#    define DECLSPEC __declspec(dllexport)
+#  else
+#    define DECLSPEC __declspec(dllimport)
+#  endif
+#else // non windows
+#  define DECLSPEC
+#endif
+
 typedef enum {
 	dl_array_strategy_fit,
 	dl_array_strategy_double
@@ -33,7 +43,7 @@ dl_error_t DECLSPEC dl_array_clear(dl_array_t *array);
 #define DL_ARRAY_GETADDRESS(array, type, index) ((type*) (array).elements)[index]
 
 #define DL_ARRAY_FOREACH(element, array, onerror, body) \
-for (dl_ptrdiff_t dl_array_i = 0; dl_array_i < array.elements_length; dl_array_i++) { \
+for (dl_ptrdiff_t dl_array_i = 0; (dl_size_t) dl_array_i < array.elements_length; dl_array_i++) { \
 	dl_error_t dl_array_e = dl_array_popElement(&array, &element); \
 	if (dl_array_e) \
 		onerror \

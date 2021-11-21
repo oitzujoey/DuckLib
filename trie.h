@@ -5,6 +5,16 @@
 #include "core.h"
 #include "memory.h"
 
+#if defined(_WIN32)
+#  if defined(EXPORTING_DUCKLIB)
+#    define DECLSPEC __declspec(dllexport)
+#  else
+#    define DECLSPEC __declspec(dllimport)
+#  endif
+#else // non windows
+#  define DECLSPEC
+#endif
+
 typedef struct dl_trie_node_s {
 	struct {
 		char **nodes_name;

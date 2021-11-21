@@ -19,7 +19,7 @@ static dl_error_t dl_trie_quit_node(dl_trie_t *trie, dl_trie_node_t *trieNode) {
 	dl_error_t e = dl_error_ok;
 	
 	dl_ptrdiff_t node_index = 0;
-	l_nodeTraverse: {
+	/*l_nodeTraverse:*/ {
 		e = dl_free(trie->memoryAllocation, (void **) &trieNode->value.nodes_name[node_index]);
 		if (e) {
 			goto l_cleanup;
@@ -75,14 +75,14 @@ static void dl_trie_print_node(dl_trie_node_t trieNode, dl_size_t indentation) {
 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
 	printf("nodes_length: %llu\n", trieNode.value.nodes_length);
 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("nodes: { /* %llX */\n", trieNode.value.nodes);
+	printf("nodes: { /* %llX */\n", (long long) trieNode.value.nodes);
 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) {
 		dl_trie_print_node(trieNode.value.nodes[i], indentation + 1);
 	}
 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
 	puts("}");
 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("nodes_name_lengths: { /* %llX */\n", trieNode.value.nodes_name_lengths);
+	printf("nodes_name_lengths: { /* %llX */\n", (long long) trieNode.value.nodes_name_lengths);
 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) {
 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++);
 		printf("%llu\n", trieNode.value.nodes_name_lengths[i]);
@@ -90,7 +90,7 @@ static void dl_trie_print_node(dl_trie_node_t trieNode, dl_size_t indentation) {
 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
 	puts("}");
 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("nodes_name: { /* %llX */\n", trieNode.value.nodes_name);
+	printf("nodes_name: { /* %llX */\n", (long long) trieNode.value.nodes_name);
 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) {
 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++);
 		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) {
@@ -103,7 +103,7 @@ static void dl_trie_print_node(dl_trie_node_t trieNode, dl_size_t indentation) {
 }
 
 void dl_trie_print(dl_trie_t trie) {
-	printf("memoryAllocation: %llX\n", trie.memoryAllocation);
+	printf("memoryAllocation: %llX\n", (long long) trie.memoryAllocation);
 	dl_trie_print_node(trie.trie, 0);
 }
 
@@ -181,7 +181,7 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 	
 	// I wonder how bad it would be if I made a while loop out of gotos? Let's try it.
 	l_nodeTraverse: {
-		if (node_index >= trieNode->value.nodes_length) {
+		if ((dl_size_t) node_index >= trieNode->value.nodes_length) {
 			// Add node.
 			e = dl_trie_pushNode(trie, trieNode, &key[offset], key_length - offset, index);
 			
@@ -304,7 +304,7 @@ void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl
 			return;
 		}
 		
-		if (node_index >= trieNode->value.nodes_length) {
+		if ((dl_size_t) node_index >= trieNode->value.nodes_length) {
 			*index = -1;
 			return;
 		}
