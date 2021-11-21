@@ -46,7 +46,7 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 	
 	
 	// Stick the block after the block list.
-	memoryAllocation->blockList[1].block = memory + memoryAllocation->blockList[0].block_size;
+	memoryAllocation->blockList[1].block = (char*)memory + memoryAllocation->blockList[0].block_size;
 	// Claim the rest of the block.
 	memoryAllocation->blockList[1].block_size = size - memoryAllocation->blockList[0].block_size;
 	if (memoryAllocation->blockList[1].block_size == 0) {
@@ -163,7 +163,7 @@ void dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation) {
 			}
 		}
 		printf("\t\t(dl_memoryBlock_t) { /* %llu */\n", i);
-		printf("\t\t\t.block = %X, /* offset = %llu */\n", memoryAllocation.blockList[i].block, memoryAllocation.blockList[i].block - memoryAllocation.memory);
+		printf("\t\t\t.block = %X, /* offset = %llu */\n", memoryAllocation.blockList[i].block, (char*)memoryAllocation.blockList[i].block - memoryAllocation.memory);
 		printf("\t\t\t.block_size = %llu,\n", memoryAllocation.blockList[i].block_size);
 		printf("\t\t\t.allocated = %s,\n", memoryAllocation.blockList[i].allocated ? "true" : "false");
 		printf("\t\t\t.unlinked = %s,\n", memoryAllocation.blockList[i].unlinked ? "true" : "false");
@@ -462,7 +462,7 @@ void dl_memory_mergeBlockBefore(dl_memoryAllocation_t *memoryAllocation, dl_bool
 	if ((previousBlock != -1) && !memoryAllocation->blockList[previousBlock].allocated) {
 		// Increase size of previousBlock.
 		memoryAllocation->blockList[block].block_size += memoryAllocation->blockList[previousBlock].block_size;
-		memoryAllocation->blockList[block].block -= memoryAllocation->blockList[previousBlock].block_size;
+		memoryAllocation->blockList[block].block = (char*)memoryAllocation->blockList[block].block - memoryAllocation->blockList[previousBlock].block_size;
 		
 		memoryAllocation->blockList[block].previousBlock = memoryAllocation->blockList[previousBlock].previousBlock;
 		if (memoryAllocation->blockList[block].previousBlock == -1) {
