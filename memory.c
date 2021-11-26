@@ -816,6 +816,10 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	// Mark deleted just in case we find that we can expand our block.
 	memoryAllocation->blockList[currentBlock].allocated = dl_false;
 	
+	if (memoryAllocation->blockList[memoryAllocation->blockList[currentBlock].nextBlock].nextBlock == -1) {
+		memoryAllocation->used = (char *) memoryAllocation->blockList[currentBlock].block - (char *) memoryAllocation->memory;
+	}
+	
 	/* No error */ dl_memory_mergeBlockAfter(memoryAllocation, dl_null, currentBlock);
 	
 	blockFits = (memoryAllocation->blockList[currentBlock].block_size >= size);
@@ -823,13 +827,6 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	if (!blockFits) {
 		/* No error */ dl_memory_mergeBlockBefore(memoryAllocation, dl_null, currentBlock);
 	}
-	
-	
-	if (memoryAllocation->blockList[memoryAllocation->blockList[currentBlock].nextBlock].nextBlock == -1) {
-		memoryAllocation->used = (char *) memoryAllocation->blockList[currentBlock].block - (char *) memoryAllocation->memory;
-	}
-	
-	
 	
 	memoryAllocation->blockList[currentBlock].allocated = dl_true;
 	error = dl_memory_reserveTableEntries(memoryAllocation, 1);
