@@ -63,7 +63,7 @@ dl_error_t DECLSPEC dl_free(dl_memoryAllocation_t *memoryAllocation, void **memo
 dl_error_t DECLSPEC dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 #else
 #define dl_malloc(memoryAllocation, memory, size) 0;*memory = malloc(size);
-#define dl_free(memoryAllocation, memory) 0;free(*memory);
+#define dl_free(memoryAllocation, memory) 0;free(*memory);*memory=dl_null;
 #define dl_realloc(memoryAllocation, memory, size) 0;*memory = realloc(*memory, size);
 #endif
 
