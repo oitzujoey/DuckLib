@@ -44,7 +44,7 @@ dl_error_t DECLSPEC dl_array_clear(dl_array_t *array);
 
 #define DL_ARRAY_FOREACH(element, array, onerror, body) \
 for (dl_ptrdiff_t dl_array_i = 0; (dl_size_t) dl_array_i < array.elements_length; dl_array_i++) { \
-	dl_error_t dl_array_e = dl_array_popElement(&array, &element); \
+	dl_error_t dl_array_e = dl_array_get(&array, &element, dl_array_i); \
 	if (dl_array_e) \
 		onerror \
 	body \
