@@ -257,8 +257,9 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 					// Splice to finish split.
 					trieNode->value.nodes[node_index].value.nodes[0] = tempNode;
 					
+					// Delete the redundant end of the original node's key.
 					e = dl_realloc(trie->memoryAllocation, (void **) &trieNode->value.nodes_name[node_index],
-					               (trieNode->value.nodes_name_lengths[node_index] - name_index) * sizeof(char));
+					               name_index * sizeof(char));
 					if (e) {
 						goto l_cleanup;
 					}
