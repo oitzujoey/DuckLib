@@ -770,12 +770,12 @@ dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory) {
 	
 	memoryAllocation->blockList[block].allocated = dl_false;
 
-	/* No error */ dl_memory_mergeBlocks(memoryAllocation, dl_null, block);
-	
 	if (memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].nextBlock == -1) {
 		memoryAllocation->used = (char *) memoryAllocation->blockList[block].block - (char *) memoryAllocation->memory;
 	}
 	
+	/* No error */ dl_memory_mergeBlocks(memoryAllocation, dl_null, block);
+
 	error = dl_error_ok;
 	l_cleanup:
 	
