@@ -67,4 +67,8 @@ dl_error_t DECLSPEC dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **m
 #define dl_realloc(memoryAllocation, memory, size) 0;*memory = realloc(*memory, size);
 #endif
 
+#define DL_MALLOC(memoryAllocation, memory, size, type) dl_malloc(memoryAllocation, memory, (size) * sizeof(type))
+#define DL_REALLOC(memoryAllocation, memory, size, type) dl_realloc(memoryAllocation, memory, (size) * sizeof(type))
+#define DL_FREE(memoryAllocation, memory) dl_free(memoryAllocation, memory)
+
 #endif // DUCKLIB_MEMORY_H
