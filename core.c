@@ -36,7 +36,7 @@ dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size) {
 	return error;
 }
 
-void dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size) {
+void dl_memcopy_noOverlap(void *destination, const void *source, const dl_size_t size) {
 	const char *s;
 
 	s = source;

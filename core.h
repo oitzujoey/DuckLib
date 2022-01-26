@@ -23,7 +23,14 @@ typedef unsigned char dl_uint8_t;
 typedef unsigned short dl_uint16_t;
 
 #define DL_UINT8_MAX    255U
-#define DL_UINT16_MAX   65535U
+#define DL_UINT16_MAX 65535U
+
+#define DL_INT8_MAX     127U
+#define DL_INT16_MAX  32767U
+
+#define DL_INT8_MIN    -128U
+#define DL_INT16_MIN -32768U
+
 
 #define dl_null ((void *) 0)
 
@@ -45,7 +52,7 @@ extern const char *dl_errorString[];
 #define dl_min(a,b) ((a < b) ? (a) : (b))
 
 dl_error_t DECLSPEC dl_memcopy(void *destination, const void *source, dl_size_t size);
-void DECLSPEC dl_memcopy_noOverlap(void *destination, const void *source, dl_size_t size);
+void DECLSPEC dl_memcopy_noOverlap(void *destination, const void *source, const dl_size_t size);
 
 void DECLSPEC dl_memclear(void *destination, dl_size_t size);
 
