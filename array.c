@@ -159,6 +159,28 @@ dl_error_t dl_array_popElement(dl_array_t *array, void *element) {
 	return e;
 }
 
+dl_error_t dl_array_popElements(dl_array_t *array, void *elements, dl_size_t count) {
+	dl_error_t e = dl_error_ok;
+	
+	if (array->elements_length > 0) {
+		if ((elements != dl_null) && (count > 0)) {
+			e = dl_memcopy(elements, (char*)array->elements + (array->elements_length - count) * array->element_size, count * array->element_size);
+			if (e) {
+				goto l_cleanup;
+			}
+		}
+		array->elements_length -= count;
+	}
+	else {
+		e = dl_error_bufferUnderflow;
+		goto l_cleanup;
+	}
+	
+	l_cleanup:
+	
+	return e;
+}
+
 /*
 Fetches element on the top of the stack.
 Returns bufferUnderflow if the stack is empty.
