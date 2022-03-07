@@ -10,7 +10,7 @@ void dl_string_isAlpha(dl_bool_t *result, const char character) {
 }
 
 void dl_string_isSpace(dl_bool_t *result, const char character) {
-	*result = (character <= ' ');
+	*result = (character <= ' ') && (character >= '\0');
 }
 
 

@@ -21,6 +21,11 @@ typedef long long dl_ptrdiff_t;
 
 typedef unsigned char dl_uint8_t;
 typedef unsigned short dl_uint16_t;
+typedef unsigned int dl_uint32_t;
+
+typedef char dl_int8_t;
+typedef short dl_int16_t;
+typedef int dl_int32_t;
 
 #define DL_UINT8_MAX    255U
 #define DL_UINT16_MAX 65535U
