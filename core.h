@@ -37,6 +37,10 @@ typedef int dl_int32_t;
 #define DL_INT16_MIN -32768U
 
 
+/* Word alignment @FIXME */
+#define DL_ALIGNMENT 8
+
+
 #define dl_null ((void *) 0)
 
 typedef enum {

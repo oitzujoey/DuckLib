@@ -709,6 +709,8 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 		error = dl_error_invalidValue;
 		goto l_cleanup;
 	}
+
+	size += DL_ALIGNMENT - (size & (DL_ALIGNMENT - 1));
 	
 	error = dl_memory_reserveTableEntries(memoryAllocation, 1);
 	if (error) {
@@ -807,6 +809,8 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 		goto l_cleanup;
 	}
 	
+	size += DL_ALIGNMENT - (size & (DL_ALIGNMENT - 1));
+
 	error = dl_memory_pointerToBlock(*memoryAllocation, &currentBlock, memory);
 	if (error || (memoryAllocation->blockList[currentBlock].allocated == dl_false)) {
 		error = dl_error_danglingPointer;
