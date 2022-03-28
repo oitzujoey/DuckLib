@@ -161,19 +161,21 @@ dl_error_t dl_array_popElement(dl_array_t *array, void *element) {
 
 dl_error_t dl_array_popElements(dl_array_t *array, void *elements, dl_size_t count) {
 	dl_error_t e = dl_error_ok;
-	
-	if (array->elements_length > 0) {
-		if ((elements != dl_null) && (count > 0)) {
-			e = dl_memcopy(elements, (char*)array->elements + (array->elements_length - count) * array->element_size, count * array->element_size);
-			if (e) {
-				goto l_cleanup;
+
+	if (count > 0) {
+		if (array->elements_length > 0) {
+			if (elements != dl_null) {
+				e = dl_memcopy(elements, (char*)array->elements + (array->elements_length - count) * array->element_size, count * array->element_size);
+				if (e) {
+					goto l_cleanup;
+				}
 			}
+			array->elements_length -= count;
 		}
-		array->elements_length -= count;
-	}
-	else {
-		e = dl_error_bufferUnderflow;
-		goto l_cleanup;
+		else {
+			e = dl_error_bufferUnderflow;
+			goto l_cleanup;
+		}
 	}
 	
 	l_cleanup:
