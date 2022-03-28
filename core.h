@@ -30,11 +30,11 @@ typedef int dl_int32_t;
 #define DL_UINT8_MAX    255U
 #define DL_UINT16_MAX 65535U
 
-#define DL_INT8_MAX     127U
-#define DL_INT16_MAX  32767U
+#define DL_INT8_MAX     127
+#define DL_INT16_MAX  32767
 
-#define DL_INT8_MIN    -128U
-#define DL_INT16_MIN -32768U
+#define DL_INT8_MIN    -128
+#define DL_INT16_MIN -32768
 
 
 /* Word alignment @FIXME */
