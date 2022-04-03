@@ -259,7 +259,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 		}
 	}
 	
-	if (index != string_length) {
+	if ((dl_size_t) index != string_length) {
 		e = dl_error_cantHappen;
 		goto l_cleanup;
 	}

@@ -55,8 +55,6 @@ static dl_error_t dl_trie_quit_node(dl_trie_t *trie, dl_trie_node_t *trieNode) {
 dl_error_t dl_trie_quit(dl_trie_t *trie) {
 	dl_error_t e = dl_error_ok;
 	
-	dl_trie_node_t *trieNode = &trie->trie;
-	
 	e = dl_trie_quit_node(trie, &trie->trie);
 	if (e) {
 		goto l_cleanup;
@@ -189,7 +187,7 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 		}
 		
 		// Did we find the leaf node?
-		if (offset == key_length) {
+		if ((dl_size_t) offset == key_length) {
 			// Yes. Reassign the index.
 			trieNode->index = index;
 			goto l_cleanup;
@@ -299,7 +297,7 @@ void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl
 	// I wonder how bad it would be if I made a while loop out of gotos? Let's try it.
 	l_nodeTraverse: {
 		// Did we find the leaf node?
-		if (offset == key_length) {
+		if ((dl_size_t) offset == key_length) {
 			// Yes. Reassign the index.
 			*index = trieNode->index;
 			return;

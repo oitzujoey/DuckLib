@@ -438,7 +438,7 @@ dl_error_t dl_memory_findBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdi
 
 void dl_memory_mergeBlockAfter(dl_memoryAllocation_t *memoryAllocation, dl_bool_t *merged, dl_ptrdiff_t block) {
 	
-	dl_size_t nextBlock = memoryAllocation->blockList[block].nextBlock;
+	dl_ptrdiff_t nextBlock = memoryAllocation->blockList[block].nextBlock;
 	
 	if ((nextBlock != -1) && !memoryAllocation->blockList[nextBlock].allocated) {
 		// Increase size of *block.
@@ -467,8 +467,7 @@ void dl_memory_mergeBlockAfter(dl_memoryAllocation_t *memoryAllocation, dl_bool_
 
 void dl_memory_mergeBlockBefore(dl_memoryAllocation_t *memoryAllocation, dl_bool_t *merged, dl_ptrdiff_t block) {
 	
-	dl_size_t previousBlock = memoryAllocation->blockList[block].previousBlock;
-	dl_size_t nextBlock = memoryAllocation->blockList[block].nextBlock;
+	dl_ptrdiff_t previousBlock = memoryAllocation->blockList[block].previousBlock;
 	
 	if ((previousBlock != -1) && !memoryAllocation->blockList[previousBlock].allocated) {
 		// Increase size of previousBlock.
@@ -621,7 +620,7 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 			// Split block.
 			
 			// Find unlinked descriptor.
-			for (dl_size_t i = memoryAllocation->blockList_length - 1; i >= 0; --i) {
+			for (dl_ptrdiff_t i = memoryAllocation->blockList_length - 1; i >= 0; --i) {
 				if (memoryAllocation->blockList[i].unlinked) {
 					extraBlock = i;
 					break;
@@ -657,7 +656,7 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 		
 		memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].allocated = dl_true;
 		
-		memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block_size + (char *) memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block - (char *) memoryAllocation->memory);
+		memoryAllocation->used = dl_max(memoryAllocation->used, (dl_size_t) (memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block_size + (char *) memoryAllocation->blockList[memoryAllocation->blockList_indexOfBlockList].block - (char *) memoryAllocation->memory));
 		memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
 	}
 	
@@ -671,11 +670,7 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrdiff_t block, dl_size_t index) {
 	dl_error_t error = dl_error_ok;
 	
-	dl_ptrdiff_t oldBlock = memoryAllocation->blockList_indexOfBlockList;
-	dl_ptrdiff_t tempBlock = -1;
-	dl_ptrdiff_t newBlock = -1;
 	dl_ptrdiff_t unlinkedBlock = -1;
-	void *tempMemory = dl_null;
 	
 	/*
 	What we are trying to do here is find a safe place in memory to put the
@@ -757,7 +752,7 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 	
 	// Pass the memory.
 	*memory = memoryAllocation->blockList[block].block;
-	memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[block].block_size + (char *) memoryAllocation->blockList[block].block - (char *) memoryAllocation->memory);
+	memoryAllocation->used = dl_max(memoryAllocation->used, (dl_size_t) (memoryAllocation->blockList[block].block_size + (char *) memoryAllocation->blockList[block].block - (char *) memoryAllocation->memory));
 	memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
 
 #ifdef MEMCHECK
@@ -817,14 +812,8 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	
 	dl_ptrdiff_t currentBlock = -1;
 	dl_ptrdiff_t newBlock = -1;
-	dl_ptrdiff_t tempBlock = -1;
-	
-	void *currentBlock_memory = dl_null;
-	
-	dl_size_t currentSize = 0;
-	
+
 	dl_bool_t blockFits = dl_false;
-	dl_size_t oldSize = 0;
 	
 	if (*memory == dl_null) {
 		error = dl_malloc(memoryAllocation, memory, size);
@@ -854,7 +843,6 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	/* No error */ dl_memory_mergeBlockAfter(memoryAllocation, dl_null, currentBlock);
 	
 	blockFits = (memoryAllocation->blockList[currentBlock].block_size >= size);
-	oldSize = memoryAllocation->blockList[currentBlock].block_size;
 	
 	if (!blockFits) {
 		/* No error */ dl_memory_mergeBlockBefore(memoryAllocation, dl_null, currentBlock);
@@ -920,7 +908,7 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
     
 	// Pass the memory.
 	*memory = memoryAllocation->blockList[newBlock].block;
-	memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[newBlock].block_size + (char *) memoryAllocation->blockList[newBlock].block - (char *) memoryAllocation->memory);
+	memoryAllocation->used = dl_max(memoryAllocation->used, (dl_size_t) (memoryAllocation->blockList[newBlock].block_size + (char *) memoryAllocation->blockList[newBlock].block - (char *) memoryAllocation->memory));
 	memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
 
 	error = dl_error_ok;
