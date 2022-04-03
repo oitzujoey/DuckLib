@@ -1,15 +1,19 @@
 
 #include "memory.h"
+#include "core.h"
 #include <stdio.h>
 #include <string.h>
+#include <valgrind/valgrind.h>
 #ifdef MEMCHECK
 #include <valgrind/memcheck.h>
-#endif
+#endif /* MEMCHECK */
+
+/* const dl_uint8_t redZoneSize = 8; */
 
 
 dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory, dl_size_t size, dl_memoryFit_t fit) {
 	dl_error_t error;
-	
+
 	// Might as well since we are only doing it once.
 	if ((memoryAllocation == dl_null) || (memory == dl_null)) {
 		error = dl_error_nullPointer;
@@ -20,6 +24,10 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 	memoryAllocation->memory = memory;
 	memoryAllocation->size = size;
 	
+#ifdef MEMCHECK
+    VALGRIND_MAKE_MEM_NOACCESS(memoryAllocation->memory, memoryAllocation->size);
+#endif /* MEMCHECK */
+
 	memoryAllocation->blockList = memory;
 	/*
 	0   Block list
@@ -33,6 +41,10 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 		goto l_cleanup;
 	}
 	
+#ifdef MEMCHECK
+    VALGRIND_MAKE_MEM_DEFINED(memoryAllocation->blockList, memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
+#endif /* MEMCHECK */
+
 	
 	// Our allocations table is our first allocation.
 	memoryAllocation->blockList[0].block = memory;
@@ -73,7 +85,6 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 	
 	memoryAllocation->used = memoryAllocation->blockList[0].block_size;
 	memoryAllocation->max_used = memoryAllocation->used;
-	
 	
 	error = dl_error_ok;
 	l_cleanup:
@@ -573,12 +584,19 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 			
 			// Copy block list to new location.
 			tempMemory = memoryAllocation->blockList[newBlock].block;
+
+#ifdef MEMCHECK
+			VALGRIND_MAKE_MEM_UNDEFINED(tempMemory, memoryAllocation->blockList[newBlock].block_size);
+#endif /* MEMCHECK */
 			error = dl_memcopy(tempMemory,
 			                   memoryAllocation->blockList,
 			                   memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
 			if (error) {
 				goto l_cleanup;
 			}
+#ifdef MEMCHECK
+			VALGRIND_MAKE_MEM_NOACCESS(memoryAllocation->blockList, memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
+#endif /* MEMCHECK */
 			
 			// Transfer control to the new block.
 			memoryAllocation->blockList = tempMemory;
@@ -586,6 +604,9 @@ dl_error_t dl_memory_reserveTableEntries(dl_memoryAllocation_t *memoryAllocation
 		}
 		
 		memoryAllocation->blockList_length += entries_left;
+#ifdef MEMCHECK
+		VALGRIND_MAKE_MEM_DEFINED(memoryAllocation->blockList, memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
+#endif /* MEMCHECK */
 		
 		// Initialize new blocks to unlinked.
 		for (dl_size_t i = 0; i < entries_left; i++) {
@@ -736,12 +757,13 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 	
 	// Pass the memory.
 	*memory = memoryAllocation->blockList[block].block;
-	
-	
 	memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[block].block_size + (char *) memoryAllocation->blockList[block].block - (char *) memoryAllocation->memory);
 	memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
 
-	
+#ifdef MEMCHECK
+	VALGRIND_MAKE_MEM_UNDEFINED(*memory, size);
+#endif /* MEMCHECK */
+
 	error = dl_error_ok;
 	l_cleanup:
 	
@@ -758,18 +780,22 @@ dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory) {
 	dl_error_t error = dl_error_ok;
 	
 	dl_ptrdiff_t block = -1;
-	
+
 	if (*memory == dl_null) {
 		error = dl_error_nullPointer;
 		goto l_cleanup;
 	}
-	
+
 	error = dl_memory_pointerToBlock(*memoryAllocation, &block, memory);
 	if (error || (memoryAllocation->blockList[block].allocated == dl_false)) {
 		error = dl_error_danglingPointer;
 		goto l_cleanup;
 	}
-	
+
+#ifdef MEMCHECK
+	VALGRIND_MAKE_MEM_NOACCESS(*memory, memoryAllocation->blockList[block].block_size);
+#endif /* MEMCHECK */
+		
 	memoryAllocation->blockList[block].allocated = dl_false;
 
 	if (memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].nextBlock == -1) {
@@ -780,7 +806,7 @@ dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory) {
 
 	error = dl_error_ok;
 	l_cleanup:
-	
+
 	*memory = dl_null;
 	
 	return error;
@@ -798,19 +824,20 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	dl_size_t currentSize = 0;
 	
 	dl_bool_t blockFits = dl_false;
+	dl_size_t oldSize = 0;
 	
 	if (*memory == dl_null) {
 		error = dl_malloc(memoryAllocation, memory, size);
 		goto l_cleanup;
 	}
-	
+
 	if (size == 0) {
 		error = dl_error_invalidValue;
 		goto l_cleanup;
 	}
 	
 	size += DL_ALIGNMENT - (size & (DL_ALIGNMENT - 1));
-
+	
 	error = dl_memory_pointerToBlock(*memoryAllocation, &currentBlock, memory);
 	if (error || (memoryAllocation->blockList[currentBlock].allocated == dl_false)) {
 		error = dl_error_danglingPointer;
@@ -827,6 +854,7 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	/* No error */ dl_memory_mergeBlockAfter(memoryAllocation, dl_null, currentBlock);
 	
 	blockFits = (memoryAllocation->blockList[currentBlock].block_size >= size);
+	oldSize = memoryAllocation->blockList[currentBlock].block_size;
 	
 	if (!blockFits) {
 		/* No error */ dl_memory_mergeBlockBefore(memoryAllocation, dl_null, currentBlock);
@@ -854,26 +882,47 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 			goto l_cleanup;
 		}
 	}
-	
+
 	if (!blockFits) {
 		// Copy.
+#ifdef MEMCHECK
+		VALGRIND_MAKE_MEM_UNDEFINED(memoryAllocation->blockList[newBlock].block, size);
+		VALGRIND_MAKE_MEM_DEFINED(*memory, memoryAllocation->blockList[currentBlock].block_size);
+#endif /* MEMCHECK */
 		error = dl_memcopy(memoryAllocation->blockList[newBlock].block,
 		                   *memory,
 		                   dl_min(size, memoryAllocation->blockList[currentBlock].block_size));
 		if (error) {
 			goto l_cleanup;
 		}
+#ifdef MEMCHECK
+		VALGRIND_MAKE_MEM_NOACCESS(*memory, oldSize);
+		VALGRIND_MAKE_MEM_UNDEFINED(memoryAllocation->blockList[newBlock].block + oldSize, size - oldSize);
+		VALGRIND_MAKE_MEM_DEFINED(memoryAllocation->blockList[newBlock].block, oldSize);
+#endif /* MEMCHECK */
 	}
+#ifdef MEMCHECK
+	else {
+		if (size > oldSize) {
+			VALGRIND_MAKE_MEM_NOACCESS(*memory, oldSize);
+			VALGRIND_MAKE_MEM_UNDEFINED(memoryAllocation->blockList[newBlock].block + oldSize, size - oldSize);
+			VALGRIND_MAKE_MEM_DEFINED(memoryAllocation->blockList[newBlock].block, oldSize);
+		}
+		else {
+			VALGRIND_MAKE_MEM_NOACCESS(*memory, oldSize);
+			VALGRIND_MAKE_MEM_DEFINED(memoryAllocation->blockList[newBlock].block, size);
+		}
+	}
+#endif /* MEMCHECK */
 	
 	// Mark allocated.
 	memoryAllocation->blockList[newBlock].allocated = dl_true;
-	
+    
 	// Pass the memory.
 	*memory = memoryAllocation->blockList[newBlock].block;
-	
 	memoryAllocation->used = dl_max(memoryAllocation->used, memoryAllocation->blockList[newBlock].block_size + (char *) memoryAllocation->blockList[newBlock].block - (char *) memoryAllocation->memory);
 	memoryAllocation->max_used = dl_max(memoryAllocation->max_used, memoryAllocation->used);
-	
+
 	error = dl_error_ok;
 	l_cleanup:
 	
