@@ -814,6 +814,7 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	dl_ptrdiff_t newBlock = -1;
 
 	dl_bool_t blockFits = dl_false;
+	dl_size_t oldSize;
 	
 	if (*memory == dl_null) {
 		error = dl_malloc(memoryAllocation, memory, size);
@@ -832,6 +833,8 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 		error = dl_error_danglingPointer;
 		goto l_cleanup;
 	}
+
+	oldSize = memoryAllocation->blockList[currentBlock].block_size;
 	
 	// Mark deleted just in case we find that we can expand our block.
 	memoryAllocation->blockList[currentBlock].allocated = dl_false;
@@ -920,4 +923,16 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	
 	return error;
 }
-#endif
+
+void dl_memory_usage(dl_size_t *bytes, const dl_memoryAllocation_t memoryAllocation) {
+	const dl_memoryBlock_t *blockList = memoryAllocation.blockList;
+	const dl_size_t blockList_length = memoryAllocation.blockList_length;
+	dl_size_t sum = 0;
+	for (dl_ptrdiff_t i = 0; (dl_size_t) i < blockList_length; i++) {
+		if (blockList[i].allocated) {
+			sum += blockList[i].block_size;
+		}
+	}
+	*bytes = sum;
+}
+#endif /* 1 */

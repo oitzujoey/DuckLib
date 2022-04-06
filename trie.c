@@ -310,16 +310,16 @@ void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl
 		
 		name_index = 0;
 		l_nameTraverse: {
-			if (offset + name_index > key_length) {
-				*index = -1;
-				return;
-			}
-			else if (name_index >= trieNode->value.nodes_name_lengths[node_index]) {
+			if (name_index >= trieNode->value.nodes_name_lengths[node_index]) {
 				// Ran out of characters. All characters were correct. Goto to this child node.
 				offset += trieNode->value.nodes_name_lengths[node_index];
 				trieNode = &trieNode->value.nodes[node_index];
 				node_index = 0;
 				goto l_nodeTraverse;
+			}
+			else if (offset + name_index >= key_length) {
+				*index = -1;
+				return;
 			}
 			else if (key[offset + name_index] != trieNode->value.nodes_name[node_index][name_index]) {
 				if (name_index != 0) {
@@ -335,10 +335,10 @@ void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl
 				name_index++;
 				goto l_nameTraverse;
 			}
-		} // Fall through.
+		} // Can't fall through.
 		
 		node_index++;
 		goto l_nodeTraverse;
-	} // Fall through.
+	} // Can't fall through.
 	// OK. `goto`s weren't ideal, though they did allow me to do some interesting things.
 }
