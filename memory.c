@@ -267,8 +267,9 @@ dl_error_t dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation) {
 	
 	// block_size
 	if (blockListEntry.block_size != memoryAllocation.blockList_length * sizeof(dl_memoryBlock_t)) {
-		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].block_size is not equal to memoryAllocation.blockList_length: %llu\n",
-		    blockListEntry.block_size);
+		printf("memoryAllocation.blockList[memoryAllocation.blockList_indexOfBlockList].block_size is not equal to memoryAllocation.blockList_length: %llu %llu\n",
+			   blockListEntry.block_size,
+			   memoryAllocation.blockList_length * sizeof(dl_memoryBlock_t));
 		error = dl_error_invalidValue;
 		goto l_cleanup;
 	}
