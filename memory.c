@@ -815,7 +815,9 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 	dl_ptrdiff_t newBlock = -1;
 
 	dl_bool_t blockFits = dl_false;
+#ifdef MEMCHECK
 	dl_size_t oldSize;
+#endif
 	
 	if (*memory == dl_null) {
 		error = dl_malloc(memoryAllocation, memory, size);
@@ -835,7 +837,9 @@ dl_error_t dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl
 		goto l_cleanup;
 	}
 
+#ifdef MEMCHECK
 	oldSize = memoryAllocation->blockList[currentBlock].block_size;
+#endif
 	
 	// Mark deleted just in case we find that we can expand our block.
 	memoryAllocation->blockList[currentBlock].allocated = dl_false;
