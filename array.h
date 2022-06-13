@@ -31,7 +31,7 @@ typedef struct {
 void DECLSPEC dl_array_init(dl_array_t *array, dl_memoryAllocation_t *memoryAllocation, dl_size_t element_size, dl_array_strategy_t strategy);
 dl_error_t DECLSPEC dl_array_quit(dl_array_t *array);
 dl_error_t DECLSPEC dl_array_pushElement(dl_array_t *array, void *element);
-dl_error_t DECLSPEC dl_array_pushElements(dl_array_t *array, void *elements, dl_size_t elements_length);
+dl_error_t DECLSPEC dl_array_pushElements(dl_array_t *array, const void *elements, dl_size_t elements_length);
 dl_error_t DECLSPEC dl_array_popElement(dl_array_t *array, void *element);
 dl_error_t DECLSPEC dl_array_popElements(dl_array_t *array, void *elements, dl_size_t count);
 dl_error_t DECLSPEC dl_array_getTop(dl_array_t *array, void *element);

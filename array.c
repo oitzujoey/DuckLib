@@ -74,7 +74,7 @@ dl_error_t dl_array_pushElement(dl_array_t *array, void *element) {
 	return e;
 }
 
-dl_error_t dl_array_pushElements(dl_array_t *array, void *elements, dl_size_t elements_length) {
+dl_error_t dl_array_pushElements(dl_array_t *array, const void *elements, dl_size_t elements_length) {
 	dl_error_t e = dl_error_ok;
 	
 	dl_bool_t wasNull = (elements == dl_null);
