@@ -58,7 +58,9 @@ typedef enum {
 extern const char *dl_errorString[];
 
 #define dl_max(a,b) ((a > b) ? (a) : (b))
-#define dl_min(a,b) ((a < b) ? (a) : (b))
+#define dl_min(a, b) ((a < b) ? (a) : (b))
+
+#define TIF(condition, t, f) ((condition) ? (t) : (f))
 
 dl_error_t DECLSPEC dl_memcopy(void *destination, const void *source, dl_size_t size);
 void DECLSPEC dl_memcopy_noOverlap(void *destination, const void *source, const dl_size_t size);
