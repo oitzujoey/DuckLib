@@ -209,15 +209,14 @@ static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
 
 	*success = dl_false;
 
-	if (key_length == 0) {
-		node->index = index;
-		*success = dl_true;
-		goto cleanup;
-	}
-
 	while (dl_true) {
 		/* Correct, but key is too long for this node. */
 		if ((dl_size_t) name_index == *node_name_length) {
+			if (*node_name_length == key_length) {
+				node->index = index;
+				*success = dl_true;
+				break;
+			}
 			// Ran out of characters. All characters were correct. Try child nodes.
 			DL_DOTIMES(node_index, node->value.nodes_length) {
 				e = dl_trie_insert_helper(trie,
@@ -275,7 +274,7 @@ static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
 				/* Split. */
 				dl_trie_node_t tempNode = *node;
 				dl_trie_init_node(node,
-				                  index,
+				                  -1,
 				                  dl_null,
 				                  0,
 				                  dl_null,
@@ -284,23 +283,22 @@ static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
 				                     node,
 				                     &(*node_name)[name_index],
 				                     *node_name_length - name_index,
-				                     node->index);
+				                     100);  /* Index doesn't seem to matter here. */
 				if (e) break;
 
-				// Add node.
+				/* Add node. */
 				e = dl_trie_pushNode(trie,
 				                     node,
 				                     &key[name_index],
 				                     key_length - name_index,
 				                     index);
 				if (e) break;
-				// Next node.
+				/* Next node. */
 				// node = &node->value.nodes[0];
-				// offset += name_index;
-				// Splice to finish split.
+				/* Splice to finish split. */
 				node->value.nodes[0] = tempNode;
 
-				// Delete the redundant end of the original node's key.
+				/* Delete the redundant end of the original node's key. */
 				e = dl_realloc(trie->memoryAllocation,
 				               (void **) node_name,
 				               name_index * sizeof(char));
@@ -314,8 +312,6 @@ static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
 		}
 		name_index++;
 	}
-
- cleanup:
 
 	return e;
 }
