@@ -8,7 +8,7 @@
 #  else
 #    define DECLSPEC __declspec(dllimport)
 #  endif
-#else // non windows
+#else /* non windows */
 #  define DECLSPEC
 #endif
 
@@ -52,7 +52,7 @@ typedef enum {
 	dl_error_danglingPointer,
 	dl_error_outOfMemory,
 	dl_error_shouldntHappen,
-	dl_error_cantHappen,
+	dl_error_cantHappen
 } dl_error_t;
 
 extern const char *dl_errorString[];
@@ -74,4 +74,4 @@ char DECLSPEC dl_nybbleToHexChar(unsigned char i);
 
 #define DL_DOTIMES(I, TOP) for (dl_ptrdiff_t I = 0; (dl_size_t) I < TOP; I++)
 
-#endif // DUCKLIB_CORE
+#endif /* DUCKLIB_CORE */

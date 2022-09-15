@@ -10,7 +10,7 @@
 #  else
 #    define DECLSPEC __declspec(dllimport)
 #  endif
-#else // non windows
+#else /* non windows */
 #  define DECLSPEC
 #endif
 
@@ -28,4 +28,4 @@ void DECLSPEC dl_string_compare_partial(dl_bool_t *result, const char *str1, con
 #define dl_string_toLower(c) (((c >= 'A') && (c <= 'Z')) ? (c - 'A' + 'a') : c)
 #define dl_string_toUpper(c) (((c >= 'a') && (c <= 'z')) ? (c - 'a' + 'A') : c)
 
-#endif // DUCKLIB_STRING_H
+#endif /* DUCKLIB_STRING_H */

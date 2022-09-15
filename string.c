@@ -112,7 +112,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 		negative = dl_true;
 	}
 	
-	// Try .1
+	/* Try .1 */
 	if (string[index] == '.') {
 		index++;
 		
