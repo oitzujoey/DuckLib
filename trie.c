@@ -195,7 +195,12 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 		
 		name_index = 0;
 		l_nameTraverse: {
-			if (offset + name_index >= key_length) {
+			if (offset + name_index == key_length) {  /* Exit point */
+				// Yes. Reassign the index.
+				trieNode->index = index;
+				goto l_cleanup;
+			}
+			if (offset + name_index >= key_length) {  /* Exit point */
 				// Split.
 				tempNode = trieNode->value.nodes[node_index];
 				trieNode->value.nodes[node_index].index = index;
@@ -227,7 +232,7 @@ dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_
 				node_index = 0;
 				goto l_nodeTraverse;
 			}
-			else if (key[offset + name_index] != trieNode->value.nodes_name[node_index][name_index]) {
+			else if (key[offset + name_index] != trieNode->value.nodes_name[node_index][name_index]) {  /* Exit point */
 				if (name_index != 0) {
 					// Split.
 					tempNode = trieNode->value.nodes[node_index];
