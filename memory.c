@@ -3,8 +3,8 @@
 #include "core.h"
 #include <stdio.h>
 #include <string.h>
-#include <valgrind/valgrind.h>
 #ifdef MEMCHECK
+#include <valgrind/valgrind.h>
 #include <valgrind/memcheck.h>
 #endif /* MEMCHECK */
 
