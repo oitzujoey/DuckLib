@@ -64,10 +64,9 @@ dl_error_t DECLSPEC dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **m
 void dl_memory_usage(dl_size_t *bytes, const dl_memoryAllocation_t memoryAllocation);
 #else
 #define dl_malloc(memoryAllocation, memory, size) 0;*memory = malloc(size);
-#define dl_free(memoryAllocation, memory) 0;free(*memory);*memory=dl_null;
-#define dl_realloc(memoryAllocation, memory, size)                             \
-  0;                                                                           \
-  *memory = realloc(*memory, size);
+#define dl_free(memoryAllocation, memory) 0;free(*(dl_uint8_t **) memory);*(dl_uint8_t **) memory=dl_null;
+#define dl_realloc(memoryAllocation, memory, size) 0;*memory = realloc(*memory, size);
+#define dl_memory_usage(bytes, memoryAllocation) *bytes = 0;
 #endif
 
 #define DL_MALLOC(memoryAllocation, memory, size, type) dl_malloc(memoryAllocation, memory, (size) * sizeof(type))

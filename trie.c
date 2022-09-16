@@ -142,6 +142,7 @@ static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
                                    const char *key,
                                    const dl_size_t key_length,
                                    const dl_ptrdiff_t index) {
+	(void) trie;  /* Unused when using native malloc. */
 	dl_error_t e = dl_error_ok;
 
 	e = dl_realloc(trie->memoryAllocation,
