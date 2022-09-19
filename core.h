@@ -2,14 +2,16 @@
 #ifndef DUCKLIB_CORE_H
 #define DUCKLIB_CORE_H
 
-#if defined(_WIN32)
-#  if defined(EXPORTING_DUCKLIB)
-#    define DECLSPEC __declspec(dllexport)
-#  else
-#    define DECLSPEC __declspec(dllimport)
+#ifndef DECLSPEC
+#  if defined(_WIN32)
+#    if defined(EXPORTING_DUCKLIB)
+#      define DECLSPEC __declspec(dllexport)
+#    else
+#      define DECLSPEC __declspec(dllimport)
+#    endif
+#  else /* non windows */
+#    define DECLSPEC
 #  endif
-#else /* non windows */
-#  define DECLSPEC
 #endif
 
 typedef unsigned char dl_bool_t;
