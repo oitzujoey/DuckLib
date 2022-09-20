@@ -33,8 +33,7 @@ static void dl_trie_init_node(dl_trie_node_t *trieNode,
 static dl_error_t dl_trie_quit_node(dl_trie_t *trie, dl_trie_node_t *trieNode) {
 	dl_error_t e = dl_error_ok;
 
-	dl_ptrdiff_t node_index = 0;
-	/*l_nodeTraverse:*/ {
+	DL_DOTIMES(node_index, trieNode->value.nodes_length) {
 		e = dl_free(trie->memoryAllocation, (void **) &trieNode->value.nodes_name[node_index]);
 		if (e) {
 			goto l_cleanup;
