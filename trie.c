@@ -163,7 +163,7 @@ static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
 	// Key lengths.
 	e = dl_realloc(trie->memoryAllocation,
 	               (void **) &trieNode->value.nodes_name_lengths,
-	               (trieNode->value.nodes_length + 1) * sizeof(char *));
+	               (trieNode->value.nodes_length + 1) * sizeof(dl_size_t));
 	if (e) {
 		goto l_cleanup;
 	}
