@@ -61,6 +61,6 @@ void dl_memory_usage(dl_size_t *bytes, const dl_memoryAllocation_t memoryAllocat
 
 #define DL_MALLOC(memoryAllocation, memory, size, type) dl_malloc(memoryAllocation, memory, (size) * sizeof(type))
 #define DL_REALLOC(memoryAllocation, memory, size, type) dl_realloc(memoryAllocation, memory, (size) * sizeof(type))
-#define DL_FREE(memoryAllocation, memory) dl_free(memoryAllocation, memory)
+#define DL_FREE(memoryAllocation, memory) dl_free(memoryAllocation, (void **) memory)
 
 #endif // DUCKLIB_MEMORY_H
