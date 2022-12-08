@@ -159,7 +159,7 @@ dl_error_t dl_array_popElements(dl_array_t *array, void *elements, dl_size_t cou
 	dl_error_t e = dl_error_ok;
 
 	if (count > 0) {
-		if (array->elements_length > 0) {
+		if (array->elements_length >= count) {
 			if (elements != dl_null) {
 				e = dl_memcopy(elements, (char*)array->elements + (array->elements_length - count) * array->element_size, count * array->element_size);
 				if (e) {
