@@ -24,6 +24,7 @@ typedef long long dl_ptrdiff_t;
 typedef unsigned char dl_uint8_t;
 typedef unsigned short dl_uint16_t;
 typedef unsigned int dl_uint32_t;
+typedef unsigned long long dl_uint64_t;
 
 typedef char dl_int8_t;
 typedef short dl_int16_t;
