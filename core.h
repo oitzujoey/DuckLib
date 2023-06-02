@@ -75,6 +75,6 @@ void DECLSPEC dl_strlen(dl_size_t *length, const char *string);
 
 char DECLSPEC dl_nybbleToHexChar(unsigned char i);
 
-#define DL_DOTIMES(I, TOP) for (dl_ptrdiff_t I = 0; (dl_size_t) I < TOP; I++)
+#define DL_DOTIMES(I, TOP) for (dl_ptrdiff_t I = 0; (dl_size_t) I < (dl_size_t) (TOP); I++)
 
 #endif /* DUCKLIB_CORE */

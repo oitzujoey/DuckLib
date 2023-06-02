@@ -5,6 +5,7 @@
 #include "core.h"
 
 void DECLSPEC dl_string_isDigit(dl_bool_t *result, const char character);
+void DECLSPEC dl_string_isHexadecimalDigit(dl_bool_t *result, const char character);
 void DECLSPEC dl_string_isAlpha(dl_bool_t *result, const char character);
 void DECLSPEC dl_string_isSpace(dl_bool_t *result, const char character);
 
