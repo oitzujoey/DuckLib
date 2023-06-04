@@ -17,13 +17,13 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 	// Might as well since we are only doing it once.
 	if ((memoryAllocation == dl_null) || (memory == dl_null)) {
 		error = dl_error_nullPointer;
-		goto l_cleanup;
+		goto cleanup;
 	}
-	
+
 	// Initialize.
 	memoryAllocation->memory = memory;
 	memoryAllocation->size = size;
-	
+
 #ifdef MEMCHECK
     VALGRIND_MAKE_MEM_NOACCESS(memoryAllocation->memory, memoryAllocation->size);
 #endif /* MEMCHECK */
@@ -35,64 +35,64 @@ dl_error_t dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory,
 	*/
 	memoryAllocation->blockList_length = 2;
 	memoryAllocation->blockList_indexOfBlockList = 0;
-	
+
 	if (memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t) > memoryAllocation->size) {
 		error = dl_error_outOfMemory;
-		goto l_cleanup;
+		goto cleanup;
 	}
-	
+
 #ifdef MEMCHECK
     VALGRIND_MAKE_MEM_DEFINED(memoryAllocation->blockList, memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t));
 #endif /* MEMCHECK */
 
-	
+
 	// Our allocations table is our first allocation.
 	memoryAllocation->blockList[0].block = memory;
 	memoryAllocation->blockList[0].block_size = memoryAllocation->blockList_length * sizeof(dl_memoryBlock_t);
 	memoryAllocation->blockList[0].allocated = dl_true;
-	
+
 	memoryAllocation->blockList[0].previousBlock = -1;
 	// Next block is the massive chunk of unallocated memory.
 	memoryAllocation->blockList[0].nextBlock = 1;
 	memoryAllocation->blockList[0].unlinked = dl_false;
-	
-	
+
+
 	// Stick the block after the block list.
 	memoryAllocation->blockList[1].block = (char*)memory + memoryAllocation->blockList[0].block_size;
 	// Claim the rest of the block.
 	memoryAllocation->blockList[1].block_size = size - memoryAllocation->blockList[0].block_size;
 	if (memoryAllocation->blockList[1].block_size == 0) {
 		error = dl_error_outOfMemory;
-		goto l_cleanup;
+		goto cleanup;
 	}
 	memoryAllocation->blockList[1].allocated = dl_false;
-	
+
 	// Previous block is the block list.
 	memoryAllocation->blockList[1].previousBlock = 0;
 	memoryAllocation->blockList[1].nextBlock = -1;
 	memoryAllocation->blockList[1].unlinked = dl_false;
-	
-	
+
+
 	// First block is the block list.
 	memoryAllocation->firstBlock = 0;
 	// // Last block is the block of unallocated memory.
 	// memoryAllocation->lastBlock = 1;
-	
-	
+
+
 	memoryAllocation->mostRecentBlock = 0;
 	memoryAllocation->fit = fit;
-	
-	
+
+
 	memoryAllocation->used = memoryAllocation->blockList[0].block_size;
 	memoryAllocation->max_used = memoryAllocation->used;
-	
+
 	error = dl_error_ok;
-	l_cleanup:
-	
+ cleanup:
+
 	if (error) {
 		memoryAllocation = dl_null;
 	}
-	
+
 	return error;
 }
 
@@ -695,13 +695,13 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 		error = dl_error_shouldntHappen;
 		goto l_cleanup;
 	}
-	
+
 	memoryAllocation->blockList[unlinkedBlock].allocated = dl_false;
-	
+
 	memoryAllocation->blockList[unlinkedBlock].block = (unsigned char *) memoryAllocation->blockList[block].block + index;
 	memoryAllocation->blockList[unlinkedBlock].block_size = memoryAllocation->blockList[block].block_size - index;
 	memoryAllocation->blockList[block].block_size = index;
-	
+
 	memoryAllocation->blockList[unlinkedBlock].nextBlock = memoryAllocation->blockList[block].nextBlock;
 	if (memoryAllocation->blockList[block].nextBlock != -1) {
 		memoryAllocation->blockList[memoryAllocation->blockList[block].nextBlock].previousBlock = unlinkedBlock;
@@ -709,48 +709,42 @@ dl_error_t dl_memory_splitBlock(dl_memoryAllocation_t *memoryAllocation, dl_ptrd
 	memoryAllocation->blockList[unlinkedBlock].previousBlock = block;
 	memoryAllocation->blockList[block].nextBlock = unlinkedBlock;
 	memoryAllocation->blockList[unlinkedBlock].unlinked = dl_false;
-	
+
 	error = dl_error_ok;
 	l_cleanup:
-	
+
 	return error;
 }
 
 #if 1
 dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size) {
 	dl_error_t error = dl_error_ok;
-	
+
 	dl_ptrdiff_t block = -1;
-	
+
 	if (size == 0) {
 		error = dl_error_invalidValue;
-		goto l_cleanup;
+		goto cleanup;
 	}
 
 	size += DL_ALIGNMENT - (size & (DL_ALIGNMENT - 1));
-	
+
 	error = dl_memory_reserveTableEntries(memoryAllocation, 1);
-	if (error) {
-		goto l_cleanup;
-	}
-	
+	if (error) goto cleanup;
+
 	// Find a fitting block.
 	error = dl_memory_findBlock(memoryAllocation, &block, size, memoryAllocation->fit);
-	if (error) {
-		goto l_cleanup;
-	}
-	
+	if (error) goto cleanup;
+
 	// Split.
 	if (memoryAllocation->blockList[block].block_size != size) {
 		error = dl_memory_splitBlock(memoryAllocation, block, size);
-		if (error) {
-			goto l_cleanup;
-		}
+		if (error) goto cleanup;
 	}
-	
+
 	// Mark allocated.
 	memoryAllocation->blockList[block].allocated = dl_true;
-	
+
 	// Pass the memory.
 	*memory = memoryAllocation->blockList[block].block;
 	memoryAllocation->used = dl_max(memoryAllocation->used, (dl_size_t) (memoryAllocation->blockList[block].block_size + (char *) memoryAllocation->blockList[block].block - (char *) memoryAllocation->memory));
@@ -761,12 +755,11 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 #endif /* MEMCHECK */
 
 	error = dl_error_ok;
-	l_cleanup:
-	
-	if (error) {
-		memory = dl_null;
-	}
-	
+
+ cleanup:
+
+	if (error) memory = dl_null;
+
 	return error;
 }
 
@@ -774,7 +767,7 @@ dl_error_t dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_
 // Sets the given pointer to zero after freeing the memory.
 dl_error_t dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory) {
 	dl_error_t error = dl_error_ok;
-	
+
 	dl_ptrdiff_t block = -1;
 
 	if (*memory == dl_null) {
