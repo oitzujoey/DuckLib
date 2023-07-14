@@ -1,13 +1,18 @@
 
 #include "array.h"
 
-void dl_array_init(dl_array_t *array, dl_memoryAllocation_t *memoryAllocation, dl_size_t element_size, dl_array_strategy_t strategy) {
-	array->memoryAllocation = memoryAllocation;
-	array->element_size = element_size;
-	array->elements_length = 0;
-	array->elements_memorySize = 0;
-	array->elements = dl_null;
-	array->strategy = strategy;
+void dl_array_init(dl_array_t *array,
+                   dl_memoryAllocation_t *memoryAllocation,
+                   dl_size_t element_size,
+                   dl_array_strategy_t strategy) {
+	dl_array_t newArray;
+	newArray.memoryAllocation = memoryAllocation;
+	newArray.element_size = element_size;
+	newArray.elements_length = 0;
+	newArray.elements_memorySize = 0;
+	newArray.elements = dl_null;
+	newArray.strategy = strategy;
+	*array = newArray;
 }
 
 dl_error_t dl_array_quit(dl_array_t *array) {
@@ -32,45 +37,42 @@ dl_error_t dl_array_quit(dl_array_t *array) {
 
 dl_error_t dl_array_pushElement(dl_array_t *array, void *element) {
 	dl_error_t e = dl_error_ok;
-	
-	// Add space for a new element.
-	switch (array->strategy) {
-	case dl_array_strategy_fit:
-		e = dl_realloc(array->memoryAllocation, &array->elements, (array->elements_length + 1) * array->element_size);
-		if (e) {
-			goto l_cleanup;
-		}
-		array->elements_memorySize = (array->elements_length + 1) * array->element_size;
-		break;
-	case dl_array_strategy_double:
-		while ((array->elements_length + 1) * array->element_size > array->elements_memorySize) {
-			e = dl_realloc(array->memoryAllocation, &array->elements, 2 * (array->elements_length + 1) * array->element_size);
-			if (e) {
-				goto l_cleanup;
-			}
-			array->elements_memorySize = 2 * (array->elements_length + 1) * array->element_size;
-		}
-		break;
-	default:
-		e = dl_error_shouldntHappen;
-		goto l_cleanup;
+
+	dl_array_t localArray = *array;
+	dl_size_t newLengthSize = (localArray.elements_length + 1) * localArray.element_size;
+
+	/* Add space for a new element. */
+	if (localArray.strategy == dl_array_strategy_fit) {
+		e = dl_realloc(localArray.memoryAllocation, &localArray.elements, newLengthSize);
+		if (e) goto cleanup;
+		localArray.elements_memorySize = newLengthSize;
 	}
-	
+	else {
+		if (newLengthSize > localArray.elements_memorySize) {
+			e = dl_realloc(localArray.memoryAllocation, &localArray.elements, 2 * newLengthSize);
+			if (e) goto cleanup;
+			localArray.elements_memorySize = 2 * newLengthSize;
+		}
+	}
+
 	if (element == dl_null) {
-		// Create an empty element.
-		/**/ dl_memclear(&((unsigned char *) array->elements)[array->element_size * array->elements_length], array->element_size);
+		/* Create an empty element. */
+		/**/ dl_memclear(((unsigned char *) localArray.elements
+		                  + (dl_ptrdiff_t) (localArray.element_size * localArray.elements_length)),
+		                 localArray.element_size);
 	} else {
-		// Copy given element into array.
-		e = dl_memcopy(&((unsigned char *) array->elements)[array->element_size * array->elements_length], element, array->element_size);
-		if (e) {
-			goto l_cleanup;
-		}
+		/* Copy given element into array. */
+		e = dl_memcopy(((unsigned char *) localArray.elements
+		                + (dl_ptrdiff_t) (localArray.element_size * localArray.elements_length)),
+		               element,
+		               localArray.element_size);
+		if (e) goto cleanup;
 	}
-	
-	array->elements_length++;
-	
-	l_cleanup:
-	
+
+	localArray.elements_length++;
+
+ cleanup:
+	*array = localArray;
 	return e;
 }
 

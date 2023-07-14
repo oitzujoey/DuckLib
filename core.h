@@ -18,8 +18,8 @@ typedef unsigned char dl_bool_t;
 #define dl_false ((dl_bool_t) 0)
 #define dl_true ((dl_bool_t) 1)
 
-typedef unsigned long long dl_size_t;
-typedef long long dl_ptrdiff_t;
+typedef unsigned long dl_size_t;
+typedef long dl_ptrdiff_t;
 
 typedef unsigned char dl_uint8_t;
 typedef unsigned short dl_uint16_t;

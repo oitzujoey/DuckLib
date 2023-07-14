@@ -44,19 +44,19 @@ typedef struct dl_memoryAllocation_s {
 
 dl_error_t DECLSPEC dl_memory_init(dl_memoryAllocation_t *memoryAllocation, void *memory, dl_size_t size, dl_memoryFit_t fit);
 void DECLSPEC dl_memory_quit(dl_memoryAllocation_t *memoryAllocation);
-void DECLSPEC dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation);
-dl_error_t DECLSPEC dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation);
+/* void DECLSPEC dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation); */
+/* dl_error_t DECLSPEC dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation); */
 
-#if 1
+#ifdef USE_DUCKLIB_MALLOC
 dl_error_t DECLSPEC dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 dl_error_t DECLSPEC dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory);
 dl_error_t DECLSPEC dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 void dl_memory_usage(dl_size_t *bytes, const dl_memoryAllocation_t memoryAllocation);
 #else
-#define dl_malloc(memoryAllocation, memory, size) 0;*memory = malloc(size);
-#define dl_free(memoryAllocation, memory) 0;free(*(dl_uint8_t **) memory);*(dl_uint8_t **) memory=dl_null;
-#define dl_realloc(memoryAllocation, memory, size) 0;*memory = realloc(*memory, size);
-#define dl_memory_usage(bytes, memoryAllocation) *bytes = 0;
+dl_error_t DECLSPEC dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
+dl_error_t DECLSPEC dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory);
+dl_error_t DECLSPEC dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
+void dl_memory_usage(dl_size_t *bytes, const dl_memoryAllocation_t memoryAllocation);
 #endif
 
 #define DL_MALLOC(memoryAllocation, memory, size, type) dl_malloc(memoryAllocation, (void **) memory, (size) * sizeof(type))

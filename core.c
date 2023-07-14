@@ -1,4 +1,7 @@
 
+#ifdef USE_STDLIB
+#include <string.h>
+#endif /* USE_STDLIB */
 #include "core.h"
 
 const char *dl_errorString[] = {
@@ -13,6 +16,12 @@ const char *dl_errorString[] = {
 	"dl_error_cantHappen"
 };
 
+#ifdef USE_STDLIB
+dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size) {
+	(void) memmove(destination, source, size);
+	return dl_error_ok;
+}
+#else /* USE_STDLIB */
 dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size) {
 	dl_error_t error = dl_error_ok;
 	const char *s;
@@ -35,6 +44,7 @@ dl_error_t dl_memcopy(void *destination, const void *source, dl_size_t size) {
 
 	return error;
 }
+#endif /* USE_STDLIB */
 
 void dl_memcopy_noOverlap(void *destination, const void *source, const dl_size_t size) {
 	const char *s;
@@ -45,11 +55,17 @@ void dl_memcopy_noOverlap(void *destination, const void *source, const dl_size_t
 	}
 }
 
+#ifdef USE_STDLIB
+void dl_memclear(void *destination, dl_size_t size) {
+	(void) memset(destination, 0, size);
+}
+#else /* USE_STDLIB */
 void dl_memclear(void *destination, dl_size_t size) {
 	for (dl_ptrdiff_t i = 0; (dl_size_t) i < size; i++) {
 		((unsigned char *) destination)[i] = 0;
 	}
 }
+#endif /* USE_STDLIB */
 
 void dl_strlen(dl_size_t *length, const char *string) {
 	dl_size_t i = 0;

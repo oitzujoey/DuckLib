@@ -81,60 +81,60 @@ dl_error_t dl_trie_quit(dl_trie_t *trie) {
 	return e;
 }
 
-static void dl_trie_print_node(dl_trie_node_t trieNode, dl_size_t indentation) {
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("index: %lli\n", trieNode.index);
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("nodes_length: %llu\n", trieNode.value.nodes_length);
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("nodes: { /* %llX */\n", (long long) trieNode.value.nodes);
-	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) {
-		dl_trie_print_node(trieNode.value.nodes[i], indentation + 1);
-	}
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	puts("}");
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("nodes_name_lengths: { /* %llX */\n", (long long) trieNode.value.nodes_name_lengths);
-	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) {
-		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++);
-		printf("%llu\n", trieNode.value.nodes_name_lengths[i]);
-	}
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	puts("}");
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	printf("nodes_name: { /* %llX */\n", (long long) trieNode.value.nodes_name);
-	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) {
-		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++);
-		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) {
-			putchar(trieNode.value.nodes_name[i][j]);
-		}
-		putchar('\n');
-	}
-	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++);
-	puts("}");
-}
+/* static void dl_trie_print_node(dl_trie_node_t trieNode, dl_size_t indentation) { */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	printf("index: %lli\n", trieNode.index); */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	printf("nodes_length: %llu\n", trieNode.value.nodes_length); */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	printf("nodes: { /\* %llX *\/\n", (long long) trieNode.value.nodes); */
+/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
+/* 		dl_trie_print_node(trieNode.value.nodes[i], indentation + 1); */
+/* 	} */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	puts("}"); */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	printf("nodes_name_lengths: { /\* %llX *\/\n", (long long) trieNode.value.nodes_name_lengths); */
+/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
+/* 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++); */
+/* 		printf("%llu\n", trieNode.value.nodes_name_lengths[i]); */
+/* 	} */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	puts("}"); */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	printf("nodes_name: { /\* %llX *\/\n", (long long) trieNode.value.nodes_name); */
+/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
+/* 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++); */
+/* 		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) { */
+/* 			putchar(trieNode.value.nodes_name[i][j]); */
+/* 		} */
+/* 		putchar('\n'); */
+/* 	} */
+/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
+/* 	puts("}"); */
+/* } */
 
-void dl_trie_print(dl_trie_t trie) {
-	printf("memoryAllocation: %llX\n", (long long) trie.memoryAllocation);
-	dl_trie_print_node(trie.trie, 0);
-}
+/* void dl_trie_print(dl_trie_t trie) { */
+/* 	printf("memoryAllocation: %llX\n", (long long) trie.memoryAllocation); */
+/* 	dl_trie_print_node(trie.trie, 0); */
+/* } */
 
-static void dl_trie_print_node_compact(dl_trie_node_t trieNode, dl_size_t indentation) {
-	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) {
-		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++);
-		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) {
-			putchar(trieNode.value.nodes_name[i][j]);
-		}
-		printf(": %lli\n", trieNode.value.nodes[i].index);
-		// printf(": ");
-		dl_trie_print_node_compact(trieNode.value.nodes[i], indentation + 1);
-	}
-}
+/* static void dl_trie_print_node_compact(dl_trie_node_t trieNode, dl_size_t indentation) { */
+/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
+/* 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++); */
+/* 		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) { */
+/* 			putchar(trieNode.value.nodes_name[i][j]); */
+/* 		} */
+/* 		printf(": %lli\n", trieNode.value.nodes[i].index); */
+/* 		// printf(": "); */
+/* 		dl_trie_print_node_compact(trieNode.value.nodes[i], indentation + 1); */
+/* 	} */
+/* } */
 
-void dl_trie_print_compact(dl_trie_t trie) {
-	printf(": %lli\n", trie.trie.index);
-	dl_trie_print_node_compact(trie.trie, 0);
-}
+/* void dl_trie_print_compact(dl_trie_t trie) { */
+/* 	printf(": %lli\n", trie.trie.index); */
+/* 	dl_trie_print_node_compact(trie.trie, 0); */
+/* } */
 
 static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
                                    dl_trie_node_t *trieNode,
