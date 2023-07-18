@@ -4,10 +4,10 @@
 
 #include "core.h"
 
-void DECLSPEC dl_string_isDigit(dl_bool_t *result, const char character);
-void DECLSPEC dl_string_isHexadecimalDigit(dl_bool_t *result, const char character);
-void DECLSPEC dl_string_isAlpha(dl_bool_t *result, const char character);
-void DECLSPEC dl_string_isSpace(dl_bool_t *result, const char character);
+dl_bool_t DECLSPEC dl_string_isDigit(const char character);
+dl_bool_t DECLSPEC dl_string_isHexadecimalDigit(const char character);
+dl_bool_t DECLSPEC dl_string_isAlpha(const char character);
+dl_bool_t DECLSPEC dl_string_isSpace(const char character);
 
 dl_error_t DECLSPEC dl_string_toBool(dl_bool_t *result, const char *string, const dl_size_t string_length);
 dl_error_t DECLSPEC dl_string_toPtrdiff(dl_ptrdiff_t *result, const char *string, const dl_size_t string_length);
