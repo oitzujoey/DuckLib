@@ -151,7 +151,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 			goto cleanup;
 		}
 
-		power = 1;
+		power = 10;
 
 		if (!dl_string_isDigit(string[index])) {
 			e = dl_error_invalidValue;
