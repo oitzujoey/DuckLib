@@ -140,7 +140,7 @@ dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
 		while (ptrdiff < 0) {
 			char tempChar = '0' - (ptrdiff % 10);
 			ptrdiff /= 10;
-			e = dl_array_pushElement(result, &tempChar);
+			e = dl_array_pushElement(&reversedResult, &tempChar);
 			if (e) goto cleanup;
 		}
 	}
@@ -148,7 +148,7 @@ dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
 		while (ptrdiff > 0) {
 			char tempChar = '0' + (ptrdiff % 10);
 			ptrdiff /= 10;
-			e = dl_array_pushElement(result, &tempChar);
+			e = dl_array_pushElement(&reversedResult, &tempChar);
 			if (e) goto cleanup;
 		}
 	}
