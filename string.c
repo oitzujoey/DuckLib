@@ -120,6 +120,51 @@ dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const char *string, const d
 	return e;
 }
 
+dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
+	dl_error_t e = dl_error_ok;
+	dl_error_t eError = dl_error_ok;
+
+	dl_array_t reversedResult;
+	(void) dl_array_init(&reversedResult, result->memoryAllocation, sizeof(char), dl_array_strategy_double);
+
+	if (ptrdiff == 0) {
+		char tempChar = '0';
+		e = dl_array_pushElement(&reversedResult, &tempChar);
+		if (e) goto cleanup;
+		ptrdiff = -ptrdiff;
+	}
+	else if (ptrdiff < 0) {
+		char tempChar = '-';
+		e = dl_array_pushElement(result, &tempChar);
+		if (e) goto cleanup;
+		while (ptrdiff < 0) {
+			char tempChar = '0' - (ptrdiff % 10);
+			ptrdiff /= 10;
+			e = dl_array_pushElement(result, &tempChar);
+			if (e) goto cleanup;
+		}
+	}
+	else {
+		while (ptrdiff > 0) {
+			char tempChar = '0' + (ptrdiff % 10);
+			ptrdiff /= 10;
+			e = dl_array_pushElement(result, &tempChar);
+			if (e) goto cleanup;
+		}
+	}
+
+	dl_size_t length = reversedResult.elements_length;
+	DL_DOTIMES(i, length) {
+		e = dl_array_pushElement(result, &((char *) reversedResult.elements)[length - i - 1]);
+		if (e) goto cleanup;
+	}
+
+ cleanup:
+	eError = dl_array_quit(&reversedResult);
+	if (eError) e = eError;
+	return e;
+}
+
 dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_t string_length) {
 	dl_error_t e = dl_error_ok;
 
@@ -297,7 +342,11 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 }
 
 
-void dl_string_compare(dl_bool_t *result, const char *str1, const dl_size_t str1_length, const char *str2, const dl_size_t str2_length) {
+void dl_string_compare(dl_bool_t *result,
+                       const char *str1,
+                       const dl_size_t str1_length,
+                       const char *str2,
+                       const dl_size_t str2_length) {
 	*result = dl_true;
 	if (str1_length != str2_length) {
 		*result = dl_false;
