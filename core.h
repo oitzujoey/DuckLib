@@ -58,7 +58,7 @@ typedef enum {
 	dl_error_cantHappen
 } dl_error_t;
 
-extern const char *dl_errorString[];
+extern const dl_uint8_t *dl_errorString[];
 
 #define dl_max(a,b) ((a > b) ? (a) : (b))
 #define dl_min(a, b) ((a < b) ? (a) : (b))
@@ -70,10 +70,10 @@ void DECLSPEC dl_memcopy_noOverlap(void *destination, const void *source, const 
 
 void DECLSPEC dl_memclear(void *destination, dl_size_t size);
 
-void DECLSPEC dl_strlen(dl_size_t *length, const char *string);
-#define DL_STR(DL_STR_string) DL_STR_string, (sizeof(DL_STR_string) - 1)
+void DECLSPEC dl_strlen(dl_size_t *length, const dl_uint8_t *string);
+#define DL_STR(DL_STR_string) ((dl_uint8_t *) DL_STR_string), (sizeof(DL_STR_string) - 1)
 
-char DECLSPEC dl_nybbleToHexChar(unsigned char i);
+dl_uint8_t DECLSPEC dl_nybbleToHexChar(dl_uint8_t i);
 
 #define DL_DOTIMES(I, TOP) for (dl_ptrdiff_t I = 0; (dl_size_t) I < (dl_size_t) (TOP); I++)
 

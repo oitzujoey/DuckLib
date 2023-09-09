@@ -21,7 +21,7 @@ static void dl_trie_init_node(dl_trie_node_t *trieNode,
                               const dl_ptrdiff_t index,
                               dl_trie_node_t *nodes,
                               const dl_size_t nodes_length,
-                              char **nodes_name,
+                              dl_uint8_t **nodes_name,
                               dl_size_t *nodes_name_lengths) {
 	trieNode->index = index;
 	trieNode->value.nodes = nodes;
@@ -138,7 +138,7 @@ dl_error_t dl_trie_quit(dl_trie_t *trie) {
 
 static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
                                    dl_trie_node_t *trieNode,
-                                   const char *key,
+                                   const dl_uint8_t *key,
                                    const dl_size_t key_length,
                                    const dl_ptrdiff_t index) {
 	(void) trie;  /* Unused when using native malloc. */
@@ -174,7 +174,7 @@ static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
 	// Keys array.
 	e = dl_realloc(trie->memoryAllocation,
 	               (void **) &trieNode->value.nodes_name,
-	               (trieNode->value.nodes_length + 1) * sizeof(char *));
+	               (trieNode->value.nodes_length + 1) * sizeof(dl_uint8_t *));
 	if (e) {
 		goto l_cleanup;
 	}
@@ -182,7 +182,7 @@ static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
 	// This key.
 	e = dl_malloc(trie->memoryAllocation,
 	              (void **) &trieNode->value.nodes_name[trieNode->value.nodes_length],
-	              key_length * sizeof(char));
+	              key_length * sizeof(dl_uint8_t));
 	if (e) {
 		goto l_cleanup;
 	}
@@ -198,9 +198,9 @@ static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
 static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
                                         dl_bool_t *success,
                                         dl_trie_node_t *node,
-                                        char **node_name,
+                                        dl_uint8_t **node_name,
                                         dl_size_t *node_name_length,
-                                        const char *key,
+                                        const dl_uint8_t *key,
                                         const dl_size_t key_length,
                                         const dl_ptrdiff_t index) {
 	dl_error_t e = dl_error_ok;
@@ -260,7 +260,7 @@ static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
 
 			e = dl_realloc(trie->memoryAllocation,
 			               (void **) node_name,
-			               name_index * sizeof(char));
+			               name_index * sizeof(dl_uint8_t));
 			if (e) break;
 			/* Trim current node's name to match key. */
 			*node_name_length = name_index;
@@ -301,7 +301,7 @@ static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
 				/* Delete the redundant end of the original node's key. */
 				e = dl_realloc(trie->memoryAllocation,
 				               (void **) node_name,
-				               name_index * sizeof(char));
+				               name_index * sizeof(dl_uint8_t));
 				if (e) break;
 				*node_name_length = name_index;
 
@@ -316,16 +316,16 @@ static dl_error_t dl_trie_insert_helper(dl_trie_t *trie,
 	return e;
 }
 
-dl_error_t dl_trie_insert(dl_trie_t *trie, const char *key, const dl_size_t key_length, const dl_ptrdiff_t index) {
+dl_error_t dl_trie_insert(dl_trie_t *trie, const dl_uint8_t *key, const dl_size_t key_length, const dl_ptrdiff_t index) {
 	dl_bool_t success;
 	/* Danger: Static allocation.
 	   This is only OK because there is no way for `dl_trie_insert_helper` to free this. */
-	char *node_name = "";
+	dl_uint8_t *node_name = dl_null;
 	dl_size_t node_name_length = 0;
 	return dl_trie_insert_helper(trie, &success, &trie->trie, &node_name, &node_name_length, key, key_length, index);
 }
 
-void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const char *key, const dl_size_t key_length) {
+void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const dl_uint8_t *key, const dl_size_t key_length) {
 
 	dl_trie_node_t *trieNode = &trie.trie;
 	dl_ptrdiff_t offset = 0;

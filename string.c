@@ -1,26 +1,26 @@
 
 #include "string.h"
 
-dl_bool_t dl_string_isDigit(const char character) {
+dl_bool_t dl_string_isDigit(const dl_uint8_t character) {
 	return (character >= '0') && (character <= '9');
 }
 
-dl_bool_t dl_string_isHexadecimalDigit(const char character) {
+dl_bool_t dl_string_isHexadecimalDigit(const dl_uint8_t character) {
 	return (((character >= '0') && (character <= '9'))
 	        || ((character >= 'a') && (character <= 'f'))
 	        || ((character >= 'A') && (character <= 'F')));
 }
 
-dl_bool_t dl_string_isAlpha(const char character) {
+dl_bool_t dl_string_isAlpha(const dl_uint8_t character) {
 	return ((character >= 'a') && (character <= 'z')) || ((character >= 'A') && (character <= 'Z'));
 }
 
-dl_bool_t dl_string_isSpace(const char character) {
+dl_bool_t dl_string_isSpace(const dl_uint8_t character) {
 	return (character <= ' ') && (character >= '\0');
 }
 
 
-dl_error_t dl_string_toBool(dl_bool_t *result, const char *string, const dl_size_t string_length) {
+dl_error_t dl_string_toBool(dl_bool_t *result, const dl_uint8_t *string, const dl_size_t string_length) {
 	dl_error_t e = dl_error_ok;
 
 	dl_string_compare(result, string, string_length, DL_STR("true"));
@@ -43,7 +43,7 @@ dl_error_t dl_string_toBool(dl_bool_t *result, const char *string, const dl_size
 	return e;
 }
 
-dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const char *string, const dl_size_t string_length) {
+dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const dl_uint8_t *string, const dl_size_t string_length) {
 	dl_error_t e = dl_error_ok;
 
 	dl_ptrdiff_t index = 0;
@@ -125,20 +125,20 @@ dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
 	dl_error_t eError = dl_error_ok;
 
 	dl_array_t reversedResult;
-	(void) dl_array_init(&reversedResult, result->memoryAllocation, sizeof(char), dl_array_strategy_double);
+	(void) dl_array_init(&reversedResult, result->memoryAllocation, sizeof(dl_uint8_t), dl_array_strategy_double);
 
 	if (ptrdiff == 0) {
-		char tempChar = '0';
+		dl_uint8_t tempChar = '0';
 		e = dl_array_pushElement(&reversedResult, &tempChar);
 		if (e) goto cleanup;
 		ptrdiff = -ptrdiff;
 	}
 	else if (ptrdiff < 0) {
-		char tempChar = '-';
+		dl_uint8_t tempChar = '-';
 		e = dl_array_pushElement(result, &tempChar);
 		if (e) goto cleanup;
 		while (ptrdiff < 0) {
-			char tempChar = '0' - (ptrdiff % 10);
+			dl_uint8_t tempChar = '0' - (ptrdiff % 10);
 			ptrdiff /= 10;
 			e = dl_array_pushElement(&reversedResult, &tempChar);
 			if (e) goto cleanup;
@@ -146,7 +146,7 @@ dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
 	}
 	else {
 		while (ptrdiff > 0) {
-			char tempChar = '0' + (ptrdiff % 10);
+			dl_uint8_t tempChar = '0' + (ptrdiff % 10);
 			ptrdiff /= 10;
 			e = dl_array_pushElement(&reversedResult, &tempChar);
 			if (e) goto cleanup;
@@ -165,7 +165,7 @@ dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
 	return e;
 }
 
-dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_t string_length) {
+dl_error_t dl_string_toDouble(double *result, const dl_uint8_t *string, const dl_size_t string_length) {
 	dl_error_t e = dl_error_ok;
 
 	dl_ptrdiff_t index = 0;
@@ -207,7 +207,7 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 
 		index++;
 
-		while (((dl_size_t) index < string_length) && (dl_string_toLower((unsigned char) string[index]) != 'e')) {
+		while (((dl_size_t) index < string_length) && (dl_string_toLower(string[index]) != 'e')) {
 			power = 10 * power;
 
 			tempBool = dl_string_isDigit(string[index]);
@@ -343,9 +343,9 @@ dl_error_t dl_string_toDouble(double *result, const char *string, const dl_size_
 
 
 void dl_string_compare(dl_bool_t *result,
-                       const char *str1,
+                       const dl_uint8_t *str1,
                        const dl_size_t str1_length,
-                       const char *str2,
+                       const dl_uint8_t *str2,
                        const dl_size_t str2_length) {
 	*result = dl_true;
 	if (str1_length != str2_length) {
@@ -359,7 +359,7 @@ void dl_string_compare(dl_bool_t *result,
 	}
 }
 
-void dl_string_compare_partial(dl_bool_t *result, const char *str1, const char *str2, const dl_size_t length) {
+void dl_string_compare_partial(dl_bool_t *result, const dl_uint8_t *str1, const dl_uint8_t *str2, const dl_size_t length) {
 	*result = dl_true;
 	for (dl_ptrdiff_t i = 0; (dl_size_t) i < length; i++) {
 		if (str1[i] != str2[i]) {
