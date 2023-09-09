@@ -16,7 +16,7 @@ dl_bool_t dl_string_isAlpha(const dl_uint8_t character) {
 }
 
 dl_bool_t dl_string_isSpace(const dl_uint8_t character) {
-	return (character <= ' ') && (character >= '\0');
+	return character <= ' ';
 }
 
 
