@@ -204,28 +204,26 @@ dl_error_t dl_array_getTop(dl_array_t *array, void *element) {
 	return e;
 }
 
-// dl_error_t dl_array_popElements(dl_array_t *array, void *element, dl_size_t number) {
-// 	dl_error_t e = dl_error_ok;
+/*
+Fetches element on the top of the stack.
+Returns bufferUnderflow if the stack is empty.
+*/
+dl_error_t dl_array_setTop(dl_array_t *array, void *element) {
+	dl_error_t e = dl_error_ok;
 	
-// 	for (dl_size_t i = 0; i < number; i++) {
-// 		if (array->elements_length > 0) {
-// 			e = dl_memcopy(element, array->elements + (array->elements_length - number) * array->element_size, number * array->element_size);
-// 			if (e) {
-// 				goto l_cleanup;
-// 			}
-// 		}
-// 		else {
-// 			e = dl_error_bufferUnderflow;
-// 			goto l_cleanup;
-// 		}
-// 	}
+	if (array->elements_length > 0) {
+		e = dl_memcopy((char*)array->elements + (array->elements_length - 1) * array->element_size,
+		               element,
+		               array->element_size);
+		if (e) goto cleanup;
+	}
+	else {
+		e = dl_error_bufferUnderflow;
+		goto cleanup;
+	}
 	
-// 	array->elements_length -= number;
-	
-// 	l_cleanup:
-	
-// 	return e;
-// }
+ cleanup: return e;
+}
 
 dl_error_t dl_array_get(dl_array_t *array, void *element, dl_ptrdiff_t index) {
 	dl_error_t e = dl_error_ok;
