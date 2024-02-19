@@ -43,6 +43,54 @@ dl_error_t dl_string_toBool(dl_bool_t *result, const dl_uint8_t *string, const d
 	return e;
 }
 
+dl_error_t dl_string_fromBool(dl_array_t *result, dl_bool_t boolean) {
+	dl_error_t e = dl_error_ok;
+
+	if (boolean) {
+		e = dl_array_pushElements(result, DL_STR("true"));
+		if (e) goto cleanup;
+	}
+	else {
+		e = dl_array_pushElements(result, DL_STR("false"));
+		if (e) goto cleanup;
+	}
+
+ cleanup: return e;
+}
+
+dl_error_t dl_string_fromUint8(dl_array_t *result, dl_uint8_t integer) {
+	dl_error_t e = dl_error_ok;
+	dl_error_t eError = dl_error_ok;
+
+	dl_array_t reversedResult;
+	(void) dl_array_init(&reversedResult, result->memoryAllocation, sizeof(dl_uint8_t), dl_array_strategy_double);
+
+	if (integer == 0) {
+		dl_uint8_t tempChar = '0';
+		e = dl_array_pushElement(&reversedResult, &tempChar);
+		if (e) goto cleanup;
+	}
+	else {
+		while (integer > 0) {
+			dl_uint8_t tempChar = '0' + (integer % 10);
+			integer /= 10;
+			e = dl_array_pushElement(&reversedResult, &tempChar);
+			if (e) goto cleanup;
+		}
+	}
+
+	dl_size_t length = reversedResult.elements_length;
+	DL_DOTIMES(i, length) {
+		e = dl_array_pushElement(result, &((char *) reversedResult.elements)[length - i - 1]);
+		if (e) goto cleanup;
+	}
+
+ cleanup:
+	eError = dl_array_quit(&reversedResult);
+	if (eError) e = eError;
+	return e;
+}
+
 dl_error_t dl_string_toPtrdiff(dl_ptrdiff_t *result, const dl_uint8_t *string, const dl_size_t string_length) {
 	dl_error_t e = dl_error_ok;
 
@@ -131,7 +179,6 @@ dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
 		dl_uint8_t tempChar = '0';
 		e = dl_array_pushElement(&reversedResult, &tempChar);
 		if (e) goto cleanup;
-		ptrdiff = -ptrdiff;
 	}
 	else if (ptrdiff < 0) {
 		dl_uint8_t tempChar = '-';
@@ -148,6 +195,39 @@ dl_error_t dl_string_fromPtrdiff(dl_array_t *result, dl_ptrdiff_t ptrdiff) {
 		while (ptrdiff > 0) {
 			dl_uint8_t tempChar = '0' + (ptrdiff % 10);
 			ptrdiff /= 10;
+			e = dl_array_pushElement(&reversedResult, &tempChar);
+			if (e) goto cleanup;
+		}
+	}
+
+	dl_size_t length = reversedResult.elements_length;
+	DL_DOTIMES(i, length) {
+		e = dl_array_pushElement(result, &((char *) reversedResult.elements)[length - i - 1]);
+		if (e) goto cleanup;
+	}
+
+ cleanup:
+	eError = dl_array_quit(&reversedResult);
+	if (eError) e = eError;
+	return e;
+}
+
+dl_error_t dl_string_fromSize(dl_array_t *result, dl_size_t sz) {
+	dl_error_t e = dl_error_ok;
+	dl_error_t eError = dl_error_ok;
+
+	dl_array_t reversedResult;
+	(void) dl_array_init(&reversedResult, result->memoryAllocation, sizeof(dl_uint8_t), dl_array_strategy_double);
+
+	if (sz == 0) {
+		dl_uint8_t tempChar = '0';
+		e = dl_array_pushElement(&reversedResult, &tempChar);
+		if (e) goto cleanup;
+	}
+	else {
+		while (sz > 0) {
+			dl_uint8_t tempChar = '0' + (sz % 10);
+			sz /= 10;
 			e = dl_array_pushElement(&reversedResult, &tempChar);
 			if (e) goto cleanup;
 		}

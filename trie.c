@@ -81,61 +81,6 @@ dl_error_t dl_trie_quit(dl_trie_t *trie) {
 	return e;
 }
 
-/* static void dl_trie_print_node(dl_trie_node_t trieNode, dl_size_t indentation) { */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	printf("index: %lli\n", trieNode.index); */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	printf("nodes_length: %llu\n", trieNode.value.nodes_length); */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	printf("nodes: { /\* %llX *\/\n", (long long) trieNode.value.nodes); */
-/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
-/* 		dl_trie_print_node(trieNode.value.nodes[i], indentation + 1); */
-/* 	} */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	puts("}"); */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	printf("nodes_name_lengths: { /\* %llX *\/\n", (long long) trieNode.value.nodes_name_lengths); */
-/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
-/* 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++); */
-/* 		printf("%llu\n", trieNode.value.nodes_name_lengths[i]); */
-/* 	} */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	puts("}"); */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	printf("nodes_name: { /\* %llX *\/\n", (long long) trieNode.value.nodes_name); */
-/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
-/* 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++); */
-/* 		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) { */
-/* 			putchar(trieNode.value.nodes_name[i][j]); */
-/* 		} */
-/* 		putchar('\n'); */
-/* 	} */
-/* 	for (dl_size_t i = 0; i < indentation; putchar('\t'),i++); */
-/* 	puts("}"); */
-/* } */
-
-/* void dl_trie_print(dl_trie_t trie) { */
-/* 	printf("memoryAllocation: %llX\n", (long long) trie.memoryAllocation); */
-/* 	dl_trie_print_node(trie.trie, 0); */
-/* } */
-
-/* static void dl_trie_print_node_compact(dl_trie_node_t trieNode, dl_size_t indentation) { */
-/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
-/* 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++); */
-/* 		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) { */
-/* 			putchar(trieNode.value.nodes_name[i][j]); */
-/* 		} */
-/* 		printf(": %lli\n", trieNode.value.nodes[i].index); */
-/* 		// printf(": "); */
-/* 		dl_trie_print_node_compact(trieNode.value.nodes[i], indentation + 1); */
-/* 	} */
-/* } */
-
-/* void dl_trie_print_compact(dl_trie_t trie) { */
-/* 	printf(": %lli\n", trie.trie.index); */
-/* 	dl_trie_print_node_compact(trie.trie, 0); */
-/* } */
-
 static dl_error_t dl_trie_pushNode(dl_trie_t *trie,
                                    dl_trie_node_t *trieNode,
                                    const dl_uint8_t *key,
@@ -380,4 +325,78 @@ void dl_trie_find(dl_trie_t trie, dl_ptrdiff_t *index, const dl_uint8_t *key, co
 		goto l_nodeTraverse;
 	} // Can't fall through.
 	// OK. `goto`s weren't ideal, though they did allow me to do some interesting things.
+}
+
+
+
+/* static void dl_trie_print_node_compact(dl_trie_node_t trieNode, dl_size_t indentation) { */
+/* 	for (dl_size_t i = 0; i < trieNode.value.nodes_length; i++) { */
+/* 		for (dl_size_t j = 0; j < indentation + 1; putchar('\t'),j++); */
+/* 		for (dl_size_t j = 0; j < trieNode.value.nodes_name_lengths[i]; j++) { */
+/* 			putchar(trieNode.value.nodes_name[i][j]); */
+/* 		} */
+/* 		printf(": %lli\n", trieNode.value.nodes[i].index); */
+/* 		// printf(": "); */
+/* 		dl_trie_print_node_compact(trieNode.value.nodes[i], indentation + 1); */
+/* 	} */
+/* } */
+
+/* void dl_trie_print_compact(dl_trie_t trie) { */
+/* 	printf(": %lli\n", trie.trie.index); */
+/* 	dl_trie_print_node_compact(trie.trie, 0); */
+/* } */
+
+
+dl_error_t dl_trie_node_prettyPrint(dl_array_t *string_array, dl_trie_node_t trie_node) {
+	dl_error_t e = dl_error_ok;
+	
+	e = dl_array_pushElements(string_array, DL_STR("(dl_trie_node_t) {"));
+	if (e) goto cleanup;
+
+	e = dl_array_pushElements(string_array, DL_STR("dl_ptrdiff_t index = "));
+	if (e) goto cleanup;
+	e = dl_string_fromPtrdiff(string_array, trie_node.index);
+	if (e) goto cleanup;
+
+	e = dl_array_pushElements(string_array, DL_STR(","));
+	if (e) goto cleanup;
+
+	e = dl_array_pushElements(string_array, DL_STR("dl_trie_node_t nodes["));
+	if (e) goto cleanup;
+	e = dl_string_fromSize(string_array, trie_node.value.nodes_length);
+	if (e) goto cleanup;
+	e = dl_array_pushElements(string_array, DL_STR("] = {"));
+	if (e) goto cleanup;
+	DL_DOTIMES(i, trie_node.value.nodes_length) {
+		e = dl_array_pushElements(string_array, trie_node.value.nodes_name[i], trie_node.value.nodes_name_lengths[i]);
+		if (e) goto cleanup;
+		e = dl_array_pushElements(string_array, DL_STR(": "));
+		if (e) goto cleanup;
+		e = dl_trie_node_prettyPrint(string_array, trie_node.value.nodes[i]);
+		if (e) goto cleanup;
+		if ((dl_size_t) i != trie_node.value.nodes_length - 1) {
+			e = dl_array_pushElements(string_array, DL_STR(", "));
+			if (e) goto cleanup;
+		}
+	}
+	e = dl_array_pushElements(string_array, DL_STR("}"));
+	if (e) goto cleanup;
+
+	e = dl_array_pushElements(string_array, DL_STR("}"));
+	if (e) goto cleanup;
+
+ cleanup: return e;
+}
+
+dl_error_t dl_trie_prettyPrint(dl_array_t *string_array, dl_trie_t trie)  {
+	dl_error_t e = dl_error_ok;
+
+	e = dl_array_pushElements(string_array, DL_STR("(dl_trie_t) {trie = "));
+	if (e) goto cleanup;
+	e = dl_trie_node_prettyPrint(string_array, trie.trie);
+	if (e) goto cleanup;
+	e = dl_array_pushElements(string_array, DL_STR("}"));
+	if (e) goto cleanup;
+
+ cleanup: return e;
 }

@@ -4,6 +4,7 @@
 
 #include "core.h"
 #include "memory.h"
+#include "array.h"
 
 typedef struct dl_trie_node_s {
 	struct {
@@ -23,8 +24,8 @@ typedef struct {
 void DECLSPEC dl_trie_init(dl_trie_t *trie, dl_memoryAllocation_t *memoryAllocation, dl_ptrdiff_t nullIndex);
 dl_error_t DECLSPEC dl_trie_quit(dl_trie_t *trie);
 
-/* void DECLSPEC dl_trie_print(dl_trie_t trie); */
-/* void DECLSPEC dl_trie_print_compact(dl_trie_t trie); */
+dl_error_t dl_trie_prettyPrint(dl_array_t *string_array, dl_trie_t trie);
+dl_error_t dl_trie_node_prettyPrint(dl_array_t *string_array, dl_trie_node_t trie_node);
 
 dl_error_t DECLSPEC dl_trie_insert(dl_trie_t *trie,
                                    const dl_uint8_t *key,
