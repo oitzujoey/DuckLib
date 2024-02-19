@@ -3,7 +3,9 @@
 #define DUCKLIB_MEMORY_H
 
 #include "core.h"
+#ifndef USE_DUCKLIB_MALLOC
 #include <stdlib.h>
+#endif /* USE_DUCKLIB_MALLOC */
 
 typedef struct {
 	void *block;

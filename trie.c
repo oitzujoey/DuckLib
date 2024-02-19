@@ -3,7 +3,6 @@
 #include "core.h"
 #include "memory.h"
 #include "string.h"
-#include <stdio.h>
 
 /*
 It's called "nullIndex" because it is the index that is returned when passed a null string.

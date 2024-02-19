@@ -1,8 +1,6 @@
 
 #include "memory.h"
 #include "core.h"
-#include <stdio.h>
-#include <string.h>
 #ifdef MEMCHECK
 #include <valgrind/valgrind.h>
 #include <valgrind/memcheck.h>
