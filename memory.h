@@ -47,7 +47,7 @@ void DECLSPEC dl_memory_quit(dl_memoryAllocation_t *memoryAllocation);
 void DECLSPEC dl_memory_printMemoryAllocation(dl_memoryAllocation_t memoryAllocation);
 dl_error_t DECLSPEC dl_memory_checkHealth(dl_memoryAllocation_t memoryAllocation);
 
-#if 1
+#if 0
 dl_error_t DECLSPEC dl_malloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
 dl_error_t DECLSPEC dl_free(dl_memoryAllocation_t *memoryAllocation, void **memory);
 dl_error_t DECLSPEC dl_realloc(dl_memoryAllocation_t *memoryAllocation, void **memory, dl_size_t size);
